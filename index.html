@@ -3,6 +3,9 @@
 #libl .row>.muted{flex:1 1 100%!important;order:5;line-height:1.45}
 #libl .row>button{order:2;margin-left:auto}
 .sig{display:inline-block;flex:none;background:var(--accent);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+.svl{display:grid;gap:8px}.svr{display:grid;grid-template-columns:28px 1fr 64px;gap:10px;align-items:center}
+.svc{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:transparent;cursor:pointer;padding:0}.svc.on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--bg)}
+.svn{display:flex;align-items:baseline;gap:12px;background:none;border:0;border-bottom:1px solid var(--line);color:inherit;font:inherit;text-align:left;padding:6px 2px;cursor:pointer}.svn:hover{border-color:var(--accent)}.svv{min-width:2.4em;font-size:1.05rem}
 </style></head><body>
 <title>Códice de Mesa</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Cg%20fill=%22none%22%20stroke=%22%23a347ff%22%20stroke-width=%222.8%22%20stroke-linejoin=%22round%22%20stroke-linecap=%22round%22%3E%3Ccircle%20cx=%2216%22%20cy=%2216%22%20r=%2213%22/%3E%3Cpath%20d=%22M16%205v22M7%2021l9-16%209%2016z%22/%3E%3C/g%3E%3C/svg%3E">
@@ -1117,6 +1120,14 @@ function sample(){
 /* ---------- regras de teste ---------- */
 const attrVal=(c,s,k)=>num(c.attrs&&c.attrs[k]!=null?c.attrs[k]:(s.roll.ad||0));
 const modOf=(s,v)=>s.roll.attrMode==='score'?Math.floor((v-10)/2):v;
+/* modificador personalizável: c.mo[k] vazio = automático (16 = +3) */
+const modAt=(c,s,k)=>{if(s.roll.attrMode==='score'&&c&&c.mo&&c.mo[k]!=null&&c.mo[k]!==''&&!isNaN(Number(c.mo[k])))return Number(c.mo[k]);return modOf(s,attrVal(c,s,k))};
+const sgn=v=>(v<0?'−':'+')+Math.abs(v);
+/* testes de resistência (D&D 5e) */
+const DND_ST={'Bárbaro':['for','con'],'Bardo':['des','car'],'Bruxo':['sab','car'],'Clérigo':['sab','car'],'Druida':['int','sab'],'Feiticeiro':['con','car'],'Guardião':['for','des'],'Guerreiro':['for','con'],'Ladino':['des','int'],'Mago':['int','sab'],'Monge':['for','des'],'Paladino':['sab','car']};
+const stDefault=c=>{const n=String(c.dvc||(c.idn&&c.idn.classe)||'').trim().toLowerCase();const k=Object.keys(DND_ST).find(x=>x.toLowerCase()===n);return k?DND_ST[k]:['sab','car']};
+const stProf=(c,s,k)=>c.st&&c.st[k]!=null?!!c.st[k]:stDefault(c).indexOf(k)>=0;
+const stBonus=(c,s,k)=>modAt(c,s,k)+(stProf(c,s,k)?prof(c,s):0)+num(c.sxs&&c.sxs[k]);
 const statVal=(c,k)=>num(c.stats&&c.stats[k]);
 /* ---------- bônus automáticos (estilo CRIS) ---------- */
 const FX_TABLE={'reflexosdefensivos':'def+2,fortitude+2,reflexos+2,vontade+2','tanquedeguerra':'def+2','esquiva':'def+3,reflexos+3','mentesa':'vontade+5','corpofechado':'fortitude+5','blindagem':'def+2','sanguedeferro':'fort+5','inquebravel':'def+5','policial':'def+2','desgarrado':'pvnex+1','vitima':'sannex+1'};
@@ -1159,7 +1170,7 @@ function formulaFor(c,s,at,bonus){
   if(r.mode==='pct')return 'd100 ≤ '+Math.max(1,Math.round(v+bonus));
   if(r.mode==='pool'){const n=Math.max(0,v);return (n||2)+'d'+S+(n?'':'↓')+fmt(bonus)}
   if(r.mode==='sum')return Math.max(1,Math.round(v))+'d'+S+fmt(bonus);
-  return '1d'+S+fmt(modOf(s,v)+bonus);
+  return '1d'+S+fmt(modAt(c,s,at)+bonus);
 }
 const die=S=>1+Math.floor(Math.random()*S);
 
@@ -1167,7 +1178,7 @@ const die=S=>1+Math.floor(Math.random()*S);
 const note=m=>{const t=$('#toast');if(!t)return;t.innerHTML=esc(m);t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)};
 /* ---------- D&D 5e: vida por dado de vida ---------- */
 const DND_DV={'Bárbaro':12,'Bardo':8,'Bruxo':8,'Clérigo':8,'Druida':8,'Feiticeiro':6,'Guardião':10,'Guerreiro':10,'Ladino':8,'Mago':6,'Monge':8,'Paladino':10};
-function dndHp(c,s){const m=modOf(s,attrVal(c,s,'con'));return c.dv>0?Math.max(1,c.dv+m)+(c.hpr||[]).reduce((a,x)=>a+Math.max(1,x+m),0):0}
+function dndHp(c,s){const m=modAt(c,s,'con');return c.dv>0?Math.max(1,c.dv+m)+(c.hpr||[]).reduce((a,x)=>a+Math.max(1,x+m),0):0}
 function dndSync(c,s){
   if(c.dvc&&c.dvcA!==c.dvc&&DND_DV[c.dvc]){c.dv=DND_DV[c.dvc];c.dvcA=c.dvc}
   if(!(c.dv>0))return;
@@ -1176,13 +1187,13 @@ function dndSync(c,s){
   c.stats.nivel=1+(c.hpr||[]).length;
 }
 function dndGain(c,s,r,label){
-  const m=modOf(s,attrVal(c,s,'con')),g=Math.max(1,r+m);c.hpr=c.hpr||[];c.hpr.push(r);
+  const m=modAt(c,s,'con'),g=Math.max(1,r+m);c.hpr=c.hpr||[];c.hpr.push(r);
   c.bars.pv.cur=num(c.bars.pv.cur)+g;dndSync(c,s);persist('c_'+c.id);
   pushLog({label:'Dado de vida · nível '+(c.hpr.length+1),formula:'d'+c.dv+(m<0?'−':'+')+Math.abs(m),detail:label+'['+r+']'+(m<0?'−':'+')+Math.abs(m)+' = +'+g+' PV',total:g,flag:r===c.dv?'crit':''});
   renderHud();renderTab();
 }
 const dndPanel=(c,s)=>{
-  const m=modOf(s,attrVal(c,s,'con')),sg=(m<0?'−':'+')+Math.abs(m),r=c.hpr||[],on=c.dv>0;
+  const m=modAt(c,s,'con'),sg=(m<0?'−':'+')+Math.abs(m),r=c.hpr||[],on=c.dv>0;
   return '<section class="panel" style="margin-bottom:14px"><h2>Pontos de Vida (dado de vida)</h2><div class="row" style="gap:10px;flex-wrap:wrap"><select data-b="dvc" data-r="dnd"><option value="">Classe…</option>'+Object.keys(DND_DV).map(k=>'<option'+(c.dvc===k?' selected':'')+'>'+k+'</option>').join('')+'</select><select data-b="dv" data-num="1" data-r="dnd"><option value="0">Dado…</option>'+[6,8,10,12].map(d=>'<option value="'+d+'"'+(c.dv===d?' selected':'')+'>d'+d+'</option>').join('')+'</select></div>'+
   (on?'<p class="muted" style="margin:10px 0 4px">Nível 1: dado cheio + mod. CON = <b>'+c.dv+' '+sg+' = '+Math.max(1,c.dv+m)+'</b></p>'+
     (r.length?'<p class="muted" style="margin:0 0 4px">'+r.map((x,i)=>'Nv '+(i+2)+': '+x+' '+sg+' = '+Math.max(1,x+m)).join(' · ')+'</p>':'')+
@@ -1245,7 +1256,7 @@ function doTest(c,s,label,at,bonus){
     const n=Math.max(1,Math.round(v)),d=Array.from({length:n},()=>die(S));
     total=d.reduce((a,b)=>a+b,0)+bonus;detail='['+d.join(', ')+']'+fmt(bonus);
   }else{
-    const m=modOf(s,v)+bonus,adv=advMode(),a=die(S),b=adv?die(S):0;
+    const m=modAt(c,s,at)+bonus,adv=advMode(),a=die(S),b=adv?die(S):0;
     const pick=adv>0?Math.max(a,b):adv<0?Math.min(a,b):a;
     total=pick+m;detail=(adv?'['+a+', '+b+'] → '+pick+(adv>0?' (vant.)':' (desv.)'):'['+a+']')+fmt(m);
     if(S===20)flag=pick===20?'crit':pick===1?'fail':'';
@@ -1426,7 +1437,7 @@ function renderHud(){
     '<polygon points="'+fill+'" fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)" stroke-width="1"/></svg>':'';
   const nodes=s.attrs.map((a,i)=>{
     const th=-Math.PI/2+i*2*Math.PI/n,x=50+40*Math.cos(th),y=50+40*Math.sin(th),v=vals[i];
-    return '<div class="node" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%"><button class="nbtn" data-act="roll-attr" data-k="'+esc(a.k)+'" title="Rolar '+esc(a.label)+'"><span class="nl">'+esc(a.s)+'</span><span class="nv">'+v+'</span>'+(s.roll.attrMode==='score'?'<span class="nm">'+(modOf(s,v)>=0?'+':'')+modOf(s,v)+'</span>':'')+(s.coc?'<span class="nm">'+Math.floor(v/2)+'/'+Math.floor(v/5)+'</span>':'')+'</button><div class="npm"><button data-act="attr-" data-k="'+esc(a.k)+'" aria-label="Diminuir '+esc(a.label)+'">−</button><button data-act="attr+" data-k="'+esc(a.k)+'" aria-label="Aumentar '+esc(a.label)+'">+</button></div></div>';
+    return '<div class="node" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%"><button class="nbtn" data-act="roll-attr" data-k="'+esc(a.k)+'" title="Rolar '+esc(a.label)+'"><span class="nl">'+esc(a.s)+'</span><span class="nv">'+v+'</span>'+(s.roll.attrMode==='score'?'<span class="nm">'+sgn(modAt(c,s,a.k))+'</span>':'')+(s.coc?'<span class="nm">'+Math.floor(v/2)+'/'+Math.floor(v/5)+'</span>':'')+'</button><div class="npm"><button data-act="attr-" data-k="'+esc(a.k)+'" aria-label="Diminuir '+esc(a.label)+'">−</button><button data-act="attr+" data-k="'+esc(a.k)+'" aria-label="Aumentar '+esc(a.label)+'">+</button></div></div>';
   }).join('');
   const hs=s.stats.find(t=>t.k===s.hero);
   const core=hs?'<div class="core"><span class="cl">'+esc(hs.label)+'</span><span class="cv">'+(statVal(c,hs.k)+fx(c,hs.k))+'</span></div>':'';
@@ -1467,13 +1478,17 @@ function renderTab(){
 }
 function renderAll(){const hm=document.getElementById('home');if(!state.chars.length){openHome(false);return}if(hm&&!state.ui.homeManual)hm.remove();renderHeader();renderHud();renderTabs();renderTab()}
 
-const tabFicha=(c,s)=>(s.id==='op'?clsPanel(c,s):'')+(s.coc?cocPanel(c,s):'')+(s.id==='dnd'?dndPanel(c,s):'')+tabFicha0(c,s);
+const savesPanel=(c,s)=>'<section class="panel" style="margin-bottom:14px"><h2>Testes de Resistência</h2><div class="svl" id="svl">'+s.attrs.map(a=>'<div class="svr" data-sk="'+esc(a.k)+'"><button class="svc'+(stProf(c,s,a.k)?' on':'')+'" data-act="save-prof" data-k="'+esc(a.k)+'" title="Proficiente neste teste" aria-label="Proficiência em '+esc(a.label)+'"></button><button class="svn" data-act="roll-save" data-k="'+esc(a.k)+'" title="Rolar teste de resistência de '+esc(a.label)+'"><b class="svv">'+sgn(stBonus(c,s,a.k))+'</b><span>'+esc(a.label)+'</span></button><input class="sx" type="number" data-ss="'+esc(a.k)+'" value="'+num(c.sxs&&c.sxs[a.k])+'" title="Bônus extra" aria-label="Bônus extra de '+esc(a.label)+'"></div>').join('')+'</div><p class="muted" style="margin-top:10px">Círculo cheio = proficiente (soma +'+prof(c,s)+'). Clique no nome para rolar. O campo à direita é um bônus extra. Já vem marcado conforme a classe (sem classe: Sabedoria e Carisma).</p></section>';
+function updSaves(){const c=cur();if(!c)return;const s=sysOf(c);if(s.roll.attrMode!=='score')return;
+  s.attrs.forEach(a=>{const r=document.querySelector('.svr[data-sk="'+a.k+'"]');if(r){r.querySelector('.svv').textContent=sgn(stBonus(c,s,a.k));r.querySelector('.svc').classList.toggle('on',stProf(c,s,a.k))}
+    const m=document.querySelector('input[data-mo="'+a.k+'"]');if(m)m.placeholder='auto '+sgn(modOf(s,attrVal(c,s,a.k)))})}
+const tabFicha=(c,s)=>(s.id==='op'?clsPanel(c,s):'')+(s.coc?cocPanel(c,s):'')+(s.id==='dnd'?dndPanel(c,s)+savesPanel(c,s):'')+tabFicha0(c,s);
 function clsPanel(c,s){const fl=fxList(c);return '<section class="panel" style="margin-bottom:14px"><h2>Classe para cálculo de atributos</h2><div class="row"><select data-b="cls" data-r="hud"><option value="">— manual —</option>'+Object.keys(CLS_OP).map(k=>'<option'+(c.cls===k?' selected':'')+'>'+k+'</option>').join('')+'</select></div><p class="muted" style="margin-top:10px">PV, PE e SAN máximos seguem a classe, o NEX, VIG e PRE. Defesa total: <b>'+(10+attrVal(c,s,'agi')+fx(c,'def'))+'</b> · Deslocamento: <b>'+(statVal(c,'desl')+fx(c,'desl'))+' m</b> · DT: <b>'+dtRitual(c,s)+'</b></p><p class="muted" style="margin-top:6px">'+(pt=>pt?'Patente <b>'+esc(pt[0])+'</b> · Crédito: <b>'+pt[2]+'</b>'+(pt[3]?' · Itens por categoria — '+pt[3]:'')+' · Prestígio mínimo: '+pt[1]+' PP':'')(PATENTES.find(p=>p[0]===(c.idn&&c.idn.patente)))+'</p></section>'}
 function tabFicha0(c,s){
   const afinidades=[['','Nenhuma'],['sangue','Sangue'],['morte','Morte'],['conhecimento','Conhecimento'],['energia','Energia'],['medo','Medo']];
   return '<div class="grid2">'+
   '<section class="panel"><h2>Identidade</h2><div class="fields">'+s.idn.map(f=>field(f.label,idnField(c,s,f))).join('')+(s.id!=='op'?'':field('Afinidade paranormal','<select data-b="afinidade" data-r="hud" style="width:100%">'+afinidades.map(x=>'<option value="'+esc(x[0])+'"'+(c.afinidade===x[0]?' selected':'')+'>'+esc(x[1])+'</option>').join('')+'</select>'))+'</div></section>'+
-  '<section class="panel"><h2>Atributos</h2><div class="fields">'+s.attrs.map(a=>field(a.label+' ('+a.s+')',numIn('attrs.'+a.k,attrVal(c,s,a.k),'hud'))).join('')+'</div><p class="muted" style="margin-top:10px">Clique no círculo de um atributo no painel acima para rolar o teste.</p></section>'+
+  '<section class="panel"><h2>Atributos</h2><div class="fields">'+s.attrs.map(a=>s.roll.attrMode==='score'?field(a.label+' ('+a.s+')','<div class="row" style="gap:8px;flex-wrap:nowrap">'+numIn('attrs.'+a.k,attrVal(c,s,a.k),'hud')+'<input type="text" inputmode="numeric" data-mo="'+esc(a.k)+'" value="'+esc(c.mo&&c.mo[a.k]!=null?c.mo[a.k]:'')+'" placeholder="auto '+sgn(modOf(s,attrVal(c,s,a.k)))+'" style="width:96px;flex:none" title="Modificador: vazio = automático (16 = +3). Digite para personalizar." aria-label="Modificador de '+esc(a.label)+'"></div>'):field(a.label+' ('+a.s+')',numIn('attrs.'+a.k,attrVal(c,s,a.k),'hud'))).join('')+'</div><p class="muted" style="margin-top:10px">'+(s.roll.attrMode==='score'?'Valor à esquerda, <b>Mod.</b> à direita: vazio usa o cálculo automático (16 = +3); digite um número para personalizar (ex.: bônus de item ou raça). ':'')+'Clique no círculo de um atributo no painel acima para rolar o teste.</p></section>'+
   '<section class="panel"><h2>Estatísticas</h2><div class="fields">'+s.stats.map(t=>field(t.label,(s.id==='op'&&t.k==='nex')?nexSel(c):numIn('stats.'+t.k,statVal(c,t.k),'hud'))).join('')+'</div>'+(s.profFrom?'<p class="muted" style="margin-top:10px">Bônus de proficiência atual: <b>+'+prof(c,s)+'</b></p>':'')+'</section>'+
   '<section class="panel"><h2>Retrato</h2><p class="muted" style="margin-bottom:10px">Envie uma foto de perfil (ou clique na imagem do painel superior).</p><div class="row"><label class="btn pri" style="cursor:pointer">Enviar foto<input type="file" accept="image/*" data-portrait="1" hidden></label><button class="btn" data-act="portrait-clear">Remover retrato</button></div></section></div>';
 }
@@ -1633,6 +1648,8 @@ function act(a,t){
     state.ui.del=false;const id=c.id;state.chars=state.chars.filter(x=>x.id!==id);
     state.active=state.chars.length?state.chars[0].id:'';persist('c_'+id);state.chars.forEach(x=>persist('c_'+x.id));persist('prefs');renderAll();break}
   case 'attr+':case 'attr-':{c.attrs[k]=attrVal(c,s,k)+(a==='attr+'?1:-1)*(s.coc?5:1);if(c.attrs[k]<0)c.attrs[k]=0;persist('c_'+c.id);renderHud();if(state.ui.tab==='ficha')renderTab();break}
+  case 'save-prof':{if(!c.st){c.st={};s.attrs.forEach(x=>c.st[x.k]=stProf(c,s,x.k))}c.st[k]=!stProf(c,s,k);persist('c_'+c.id);updSaves();break}
+  case 'roll-save':{const at=s.attrs.find(x=>x.k===k);if(at)doTest(c,s,'Resistência · '+at.label,k,(stProf(c,s,k)?prof(c,s):0)+num(c.sxs&&c.sxs[k]));break}
   case 'roll-attr':{const at=s.attrs.find(x=>x.k===k);if(s.coc)cocTest(c,s,at.label,attrVal(c,s,k));else doTest(c,s,at.label,k,0);break}
   case 'bar':{const d=c.bars[k];let v=num(d.cur)+num(t.dataset.d);v=Math.max(0,v);if(num(d.max)>0)v=Math.min(num(d.max),v);d.cur=v;
     const inp=$('input[data-bar="cur"][data-k="'+k+'"]');if(inp)inp.value=v;updBar(k);persist('c_'+c.id);break}
@@ -1640,7 +1657,7 @@ function act(a,t){
   case 'roll-skill':{const sk=s.skills.find(x=>x.k===k);if(s.coc)cocTest(c,s,sk.label+(sk.sp&&c.sn&&c.sn[k]?' ('+c.sn[k]+')':''),cocVal(c,s,k));else doTest(c,s,sk.label,sk.a,skillBonus(c,s,k));break}
   case 'dnd-lvl':if(c.dv>0)dndGain(c,s,die(c.dv),'');break;
   case 'dnd-reg':{const v=Math.round(num(($('#dvMan')||{}).value));if(c.dv>0&&v>=1&&v<=c.dv)dndGain(c,s,v,'manual ');else note('Informe um valor de 1 a '+c.dv);break}
-  case 'dnd-undo':if((c.hpr||[]).length){const m=modOf(s,attrVal(c,s,'con')),x=c.hpr.pop();c.bars.pv.cur=Math.max(0,num(c.bars.pv.cur)-Math.max(1,x+m));dndSync(c,s);persist('c_'+c.id);renderHud();renderTab()}break;
+  case 'dnd-undo':if((c.hpr||[]).length){const m=modAt(c,s,'con'),x=c.hpr.pop();c.bars.pv.cur=Math.max(0,num(c.bars.pv.cur)-Math.max(1,x+m));dndSync(c,s);persist('c_'+c.id);renderHud();renderTab()}break;
   case 'sb-in':showLogin();break;
   case 'sb-google':sbOAuth('google');break;
   case 'sb-discord':sbOAuth('discord');break;
@@ -1740,9 +1757,11 @@ document.addEventListener('input',e=>{
   const t=e.target,c=cur();
   if(t.id==='skq'){state.ui.q=t.value;renderSkills();return}
   if(!c)return;
+  if(t.dataset.mo){const k=t.dataset.mo,v=t.value.trim().replace('−','-');c.mo=c.mo||{};if(v===''||isNaN(Number(v)))delete c.mo[k];else c.mo[k]=Number(v);persist('c_'+c.id);renderHud();updSaves();return}
+  if(t.dataset.ss){const k=t.dataset.ss;c.sxs=c.sxs||{};c.sxs[k]=t.value===''?0:Number(t.value);persist('c_'+c.id);updSaves();return}
   if(t.dataset.b!==undefined){
     setPath(c,t.dataset.b,(t.type==='number'||t.dataset.num)?(t.value===''?0:Number(t.value)):t.value);persist('c_'+c.id);
-    if(t.dataset.r==='hud')renderHud();else if(t.dataset.r==='name'){const o=$('#csel option[value="'+c.id+'"]');if(o)o.textContent=(c.name||'Sem nome')+' · '+sysOf(c).name}else if(t.dataset.r==='inv')updInv();else if(t.dataset.r==='dnd'){renderHud();renderTab()}
+    if(/^attrs\./.test(t.dataset.b))updSaves();if(t.dataset.r==='hud')renderHud();else if(t.dataset.r==='name'){const o=$('#csel option[value="'+c.id+'"]');if(o)o.textContent=(c.name||'Sem nome')+' · '+sysOf(c).name}else if(t.dataset.r==='inv')updInv();else if(t.dataset.r==='dnd'){renderHud();renderTab()}
   }else if(t.dataset.bar){
     const d=c.bars[t.dataset.k];d[t.dataset.bar]=t.value===''?0:Number(t.value);updBar(t.dataset.k);persist('c_'+c.id);
   }else if(t.dataset.sv){const k=t.dataset.sv;c.sv=c.sv||{};if(t.value==='')delete c.sv[k];else c.sv[k]=Math.max(0,Number(t.value));persist('c_'+c.id);
