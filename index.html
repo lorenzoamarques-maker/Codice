@@ -41,7 +41,175 @@ var im=new Image();im.onload=ok;im.onerror=function(){try{var d=H.querySelector(
 .hg .kc.hcx{min-height:128px}.kb.pri{background:var(--accent);border:0;color:var(--accent-ink,#fff);padding:6px 12px;border-radius:3px;font-weight:600;cursor:pointer;float:right}
 #home .hg.hgx{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}.kb.pri{white-space:nowrap}
 .kb.mzb{background:linear-gradient(135deg,#3a1a6e,#6d2bd1);border-color:#a347ff;color:#fff;box-shadow:0 0 18px #a347ff88}.kb.mzb:hover{box-shadow:0 0 26px #a347ffcc}
-</style></head><body>
+</style>
+
+<!-- Elden AdBlock -->
+<script>
+(() => {
+  "use strict";
+
+  const SUPABASE_URL =
+    "https://pmbxwpiodtplqajstclm.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_Iwp2-WJWGGvOyJcV_-vpaA_D8eKMkML";
+
+  const EldenAdBlock = {
+    enabled: true,
+    blockedDomains: [],
+
+    async init() {
+      console.log("[Elden AdBlock] Conectando à nuvem...");
+
+      try {
+        await this.loadSettings();
+        await this.loadFilters();
+
+        if (!this.enabled) {
+          console.log("[Elden AdBlock] Desativado.");
+          return;
+        }
+
+        this.cleanPage();
+        this.observePage();
+
+        console.log(
+          "[Elden AdBlock] Ativo! Filtros:",
+          this.blockedDomains.length
+        );
+      } catch (error) {
+        console.error(
+          "[Elden AdBlock] Erro na conexão:",
+          error
+        );
+      }
+    },
+
+    async request(table) {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/${table}`,
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Supabase: ${response.status}`);
+      }
+
+      return response.json();
+    },
+
+    async loadSettings() {
+      const settings = await this.request(
+        "adblock_settings?select=enabled&limit=1"
+      );
+
+      if (settings.length > 0) {
+        this.enabled = settings[0].enabled;
+      }
+    },
+
+    async loadFilters() {
+      const filters = await this.request(
+        "adblock_filters?select=domain&enabled=eq.true"
+      );
+
+      this.blockedDomains = filters
+        .map(item => item.domain.toLowerCase());
+    },
+
+    isBlocked(url) {
+      try {
+        const host = new URL(url, location.href)
+          .hostname.toLowerCase();
+
+        // Players oficiais precisam continuar acessíveis.
+        const playerDomains = [
+          "youtube.com",
+          "youtube-nocookie.com",
+          "youtu.be",
+          "spotify.com"
+        ];
+        if (playerDomains.some(domain =>
+          host === domain || host.endsWith("." + domain)
+        )) return false;
+
+        return this.blockedDomains.some(domain =>
+          host === domain ||
+          host.endsWith("." + domain)
+        );
+      } catch {
+        return false;
+      }
+    },
+
+    cleanElement(element) {
+      if (!(element instanceof Element)) return;
+
+      if (
+        element.matches(
+          '[data-ad="true"], [data-advertisement="true"]'
+        )
+      ) {
+        element.remove();
+        return;
+      }
+
+      if (
+        element.matches("iframe[src]") &&
+        this.isBlocked(element.src)
+      ) {
+        element.remove();
+      }
+    },
+
+    cleanPage() {
+      document.querySelectorAll(
+        '[data-ad="true"], [data-advertisement="true"], iframe[src]'
+      ).forEach(element => this.cleanElement(element));
+    },
+
+    observePage() {
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node instanceof Element) {
+              this.cleanElement(node);
+
+              node.querySelectorAll?.(
+                '[data-ad="true"], [data-advertisement="true"], iframe[src]'
+              ).forEach(element => this.cleanElement(element));
+            }
+          });
+        });
+      });
+
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+    }
+  };
+
+  window.EldenAdBlock = EldenAdBlock;
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => EldenAdBlock.init()
+    );
+  } else {
+    EldenAdBlock.init();
+  }
+})();
+</script>
+
+</head>
+<body>
 <div id="boot" style="position:fixed;inset:0;z-index:2147483000;background:#111;color:#eee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:600 15px -apple-system,BlinkMacSystemFont,Roboto,sans-serif;text-align:center;padding:24px"><div style="width:38px;height:38px;border:4px solid #333;border-top-color:#a347ff;border-radius:50%;animation:bootspin 1s linear infinite"></div><div>Carregando o Códice de Mesa…</div><div id="bootm" style="font-weight:400;font-size:13px;opacity:.75;max-width:320px;line-height:1.45">Na primeira vez pode levar alguns segundos.</div></div><style>@keyframes bootspin{to{transform:rotate(360deg)}}</style><script>(function(){var m=function(t){var e=document.getElementById('bootm');if(e)e.innerHTML=t};setTimeout(function(){m('Está demorando… Se você abriu pelo Discord, toque no menu (⋮ ou ⋯) e escolha “Abrir no navegador”.')},12000);window.addEventListener('error',function(e){window.__bootErr=e.message||'erro';if(document.getElementById('boot'))m('Não consegui iniciar: '+(e.message||'erro')+'<br><button onclick="location.reload()" style="margin-top:10px;padding:10px 16px;border:0;border-radius:6px;background:#a347ff;color:#fff;font-weight:700">Recarregar</button>')})})();</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1385,7 +1553,7 @@ async function cmbAct(v){const i=v.indexOf('|'),a=v.slice(0,i),g=v.slice(i+1),c=
   cmbRedraw()}
 
 /* ================= MÚSICA (YouTube / Spotify) — o mestre controla para todos ================= */
-const MUS={pls:[{id:'p1',name:'Playlist 1',list:[]}],pl:0,pp:0,cur:-1,loop:false,play:false,k:0,vol:100,tab:'now',url:'',nm:'',err:'',q:'',drag:false};let musEng={key:'',yt:null,box:null,ready:null,min:false,pub:null,iv:0},musTm=0;
+const MUS={pls:[{id:'p1',name:'Playlist 1',list:[]}],pl:0,pp:0,cur:-1,loop:false,play:false,k:0,vol:100,tab:'now',url:'',nm:'',err:'',q:'',drag:false};let musEng={key:'',yt:null,media:null,box:null,ready:null,min:false,pub:null,iv:0},musTm=0,musLocalStopped=false;
 const musLocal=()=>{try{const s=localStorage.getItem('cdm_vol');return s===null||isNaN(+s)?60:+s}catch(e){return 60}};
 const musPl=()=>MUS.pls[MUS.pl]||(MUS.pl=0,MUS.pls[0]);
 const musTr=()=>{const p=MUS.pls[MUS.pp];return p&&p.list[MUS.cur]||null};
@@ -1395,38 +1563,42 @@ function musParse(u){u=String(u||'').trim();let m;if(!u)return null;
   if((m=u.match(/youtube\.com\/playlist\?[^#]*list=([\w-]+)/)))return {src:'yt',id:'',list:m[1]};
   if((m=u.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/)))return {src:'sp',kind:m[1],id:m[2]};
   if((m=u.match(/^spotify:(track|album|playlist|episode|show|artist):([A-Za-z0-9]+)/)))return {src:'sp',kind:m[1],id:m[2]};
-  return null}
-async function musTitle(p,url){try{const o=p.src==='yt'?'https://www.youtube.com/oembed?format=json&url='+encodeURIComponent('https://www.youtube.com/watch?v='+(p.id||'')+(p.list?'&list='+p.list:'')):'https://open.spotify.com/oembed?url='+encodeURIComponent(url);
+   try{const z=new URL(u);if((z.protocol==='https:'||z.protocol==='http:')&&/\.(mp3|m4a|aac|ogg|oga|wav|flac|mp4|webm|mov|m4v)(?:$)/i.test(z.pathname)){return {src:'media',url:z.href,kind:/\.(mp4|webm|mov|m4v)$/i.test(z.pathname)?'video':'audio'}}}catch(e){}
+   return null}
+async function musTitle(p,url){try{if(p.src==='media')return '';const o=p.src==='yt'?'https://www.youtube.com/oembed?format=json&url='+encodeURIComponent('https://www.youtube.com/watch?v='+(p.id||'')+(p.list?'&list='+p.list:'')):'https://open.spotify.com/oembed?url='+encodeURIComponent(url);
     const r=await fetch(o);if(r.ok){const j=await r.json();return j.title||''}}catch(e){}return ''}
 function musIsGm(){const z=window.__MZ;return z&&z.ch!==undefined&&!z.local?!!z.gm:(z&&z.local?true:!!(CAMP.cur&&sbUser&&CAMP.cur.owner===sbUser.id))}
-function musVolApply(){const y=musEng.yt;if(y&&y.setVolume){try{y.setVolume(Math.round(((musEng.pub&&musEng.pub.vol!=null?musEng.pub.vol:100)*musLocal())/100))}catch(e){}}}
+function musVolApply(){const v=Math.max(0,Math.min(1,((musEng.pub&&musEng.pub.vol!=null?musEng.pub.vol:100)*musLocal())/10000));const y=musEng.yt;if(y&&y.setVolume){try{y.setVolume(Math.round(v*100))}catch(e){}}if(musEng.media)musEng.media.volume=v}
 function musEnsureBox(){if(musEng.box&&document.body.contains(musEng.box))return musEng.box;const b=document.createElement('div');b.id='musBox';
-  b.style.cssText='position:fixed;z-index:2147482000;left:84px;bottom:12px;width:230px;background:#141414;border:1px solid #444;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px #000a;color:#fff;font:13px system-ui,sans-serif';
-  b.innerHTML='<style>@media(max-width:760px){#musBox{left:8px!important;bottom:70px!important;width:min(230px,70vw)!important}}#musBox button{background:#2a2a2a;border:1px solid #555;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px}#musBox.min #musBody{display:none}</style><div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1d1d1d"><span>♪</span><span id="musTi" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="musMn" title="Minimizar">▾</button></div><div id="musBody"><div id="musFr"></div><div style="padding:6px 8px"><button id="musGo" style="display:none;width:100%;margin-bottom:6px;background:#a347ff;border-color:#a347ff">▶ Ativar a música</button><div style="display:flex;align-items:center;gap:6px"><span title="Seu volume">🔊</span><input id="musVl" type="range" min="0" max="100" style="flex:1;min-width:0"><span id="musVn" style="width:30px;text-align:right"></span></div><a id="musApp" target="_blank" rel="noopener" style="display:none;margin-top:6px;text-align:center;padding:6px;border:1px solid #a347ff;border-radius:6px;color:#fff;text-decoration:none">Abrir no app (Premium sem anúncios)</a><div style="font-size:11px;opacity:.7;margin-top:4px">Só o mestre controla a música. Aqui você ajusta o seu volume.</div></div></div>';
+  b.style.cssText='position:fixed;z-index:2147482000;left:84px;bottom:12px;width:230px;max-width:calc(100vw - 16px);background:#141414;border:1px solid #444;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px #000a;color:#fff;font:13px system-ui,sans-serif';
+  b.innerHTML='<style>@media(max-width:760px){#musBox{left:50%!important;right:auto!important;bottom:calc(12px + env(safe-area-inset-bottom, 0px))!important;transform:translateX(-50%);width:min(94vw,380px)!important;max-width:calc(100vw - 16px)!important;border-radius:14px!important}#musBox button{min-height:42px;padding:8px 12px;font-size:14px}#musBox #musTi{font-size:14px}#musBox #musBody{max-height: min(55vh,420px);overflow-y:auto;-webkit-overflow-scrolling:touch}#musBox iframe{max-width:100%}}@media(max-width:380px){#musBox{width:calc(100vw - 16px)!important}}#musBox button{background:#2a2a2a;border:1px solid #555;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px}#musBox.min #musBody{display:none}</style><div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1d1d1d"><span>♪</span><span id="musTi" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="musMn" title="Minimizar">▾</button></div><div id="musBody"><div id="musFr"></div><div style="padding:6px 8px"><button id="musGo" style="display:none;width:100%;margin-bottom:6px;background:#a347ff;border-color:#a347ff">▶ Ativar a música</button><div style="display:flex;align-items:center;gap:6px"><span title="Seu volume">🔊</span><input id="musVl" type="range" min="0" max="100" style="flex:1;min-width:0"><span id="musVn" style="width:30px;text-align:right"></span></div><a id="musApp" target="_blank" rel="noopener" style="display:none;margin-top:6px;text-align:center;padding:6px;border:1px solid #a347ff;border-radius:6px;color:#fff;text-decoration:none">Abrir no app (Premium sem anúncios)</a><div style="display:flex;gap:6px;margin-top:7px"><button id="musLocalStop" type="button" style="flex:1;background:#3a2020;border-color:#8b3b3b">⏹ Parar só neste aparelho</button></div><div style="font-size:11px;opacity:.7;margin-top:4px">O mestre controla a playlist. Você pode parar a reprodução apenas no seu aparelho.</div></div></div>';
   document.body.appendChild(b);musEng.box=b;const vl=b.querySelector('#musVl');vl.value=musLocal();b.querySelector('#musVn').textContent=vl.value;
   vl.oninput=e=>{try{localStorage.setItem('cdm_vol',e.target.value)}catch(x){}b.querySelector('#musVn').textContent=e.target.value;musVolApply()};
   b.querySelector('#musMn').onclick=()=>{musEng.min=!musEng.min;b.classList.toggle('min',musEng.min);b.querySelector('#musMn').textContent=musEng.min?'▴':'▾'};
-  b.querySelector('#musGo').onclick=()=>{try{musEng.yt.playVideo()}catch(e){}b.querySelector('#musGo').style.display='none'};
+  b.querySelector('#musGo').onclick=()=>{musLocalStopped=false;try{if(musEng.media){const r=musEng.media.play();if(r&&r.catch)r.catch(()=>{});}else if(musEng.yt)musEng.yt.playVideo();else if(musEng.pub&&musEng.pub.src==='sp'){musApply(musEng.pub)}b.querySelector('#musGo').style.display='none'}catch(e){}};
+  b.querySelector('#musLocalStop').onclick=()=>{musLocalStopped=true;try{if(musEng.media)musEng.media.pause();if(musEng.yt&&musEng.yt.pauseVideo)musEng.yt.pauseVideo();if(musEng.pub&&musEng.pub.src==='sp'){const fr=b.querySelector('#musFr');if(fr)fr.innerHTML='<div style="padding:18px;text-align:center;background:#1b1b1b;color:#ddd">Reprodução parada apenas neste aparelho.</div>'}}catch(e){}};
   return b}
 function musAppLink(b,p){const a=b.querySelector('#musApp');if(!a)return;let u='';if(p.src==='yt')u=p.id?'https://www.youtube.com/watch?v='+p.id+(p.list?'&list='+p.list:''):(p.list?'https://www.youtube.com/playlist?list='+p.list:'');else if(p.src==='sp')u='https://open.spotify.com/'+p.kind+'/'+p.id;a.href=u||'#';a.style.display=(u&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent))?'block':'none'}
 function musLoadAPI(){if(musEng.ready)return musEng.ready;musEng.ready=new Promise(res=>{if(window.YT&&YT.Player)return res();const pr=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{try{pr&&pr()}catch(e){}res()};const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>{musEng.ready=null;res()};document.head.appendChild(s)});return musEng.ready}
-function musStop(){clearInterval(musEng.iv);musEng.iv=0;try{if(musEng.yt&&musEng.yt.destroy)musEng.yt.destroy()}catch(e){}musEng.yt=null;musEng.key='';musEng.pub=null;if(musEng.box){musEng.box.remove();musEng.box=null}}
+function musStop(){clearInterval(musEng.iv);musEng.iv=0;try{if(musEng.yt&&musEng.yt.destroy)musEng.yt.destroy()}catch(e){}try{if(musEng.media){musEng.media.pause();musEng.media.removeAttribute('src');musEng.media.load()}}catch(e){}musEng.media=null;musEng.yt=null;musEng.key='';musEng.pub=null;if(musEng.box){musEng.box.remove();musEng.box=null}}
 async function musApply(p){if(!p){musStop();return}
-  const b=musEnsureBox(),key=p.src+':'+(p.id||'')+':'+(p.list||'')+(p.kind||'')+':'+p.k;b.querySelector('#musTi').textContent=p.ti||(p.src==='yt'?'YouTube':'Spotify');musAppLink(b,p);
-  b.querySelector('#musVl').parentNode.style.display=p.src==='yt'?'flex':'none';
-  if(p.src==='sp'){musEng.pub=p;if(musEng.key!==key){if(musEng.yt){try{musEng.yt.destroy()}catch(e){}musEng.yt=null}musEng.key=key;const h=(p.kind==='track'||p.kind==='episode')?152:352;b.querySelector('#musFr').innerHTML='<iframe title="Spotify" style="border:0;width:100%;height:'+h+'px;display:block" src="https://open.spotify.com/embed/'+p.kind+'/'+p.id+'?utm_source=generator&theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>'}return}
+  const b=musEnsureBox(),key=p.src+':'+(p.id||'')+':'+(p.list||'')+(p.kind||'')+':'+p.k;if(musEng.key!==key)musLocalStopped=false;b.querySelector('#musTi').textContent=p.ti||(p.src==='yt'?'YouTube':'Spotify');musAppLink(b,p);
+  if(!musIsGm()&&musLocalStopped&&musEng.key===key){musEng.pub=p;try{if(musEng.media)musEng.media.pause();if(musEng.yt&&musEng.yt.pauseVideo)musEng.yt.pauseVideo()}catch(e){}return;}
+  b.querySelector('#musVl').parentNode.style.display=(p.src==='yt'||p.src==='media')?'flex':'none';
+   if(p.src==='media'){musEng.pub=p;if(musEng.key!==key){try{if(musEng.yt&&musEng.yt.destroy)musEng.yt.destroy()}catch(e){}musEng.yt=null;try{if(musEng.media){musEng.media.pause();musEng.media.removeAttribute('src');musEng.media.load()}}catch(e){}musEng.key=key;const fr=b.querySelector('#musFr');fr.innerHTML='';fr.style.pointerEvents='auto';const el=document.createElement(p.kind==='video'?'video':'audio');el.id='musNative';el.controls=false;el.playsInline=true;el.preload='auto';el.style.cssText='display:block;width:100%;max-width:100%;'+(p.kind==='video'?'max-height:210px;background:#000;':'');el.src=p.url;fr.appendChild(el);musEng.media=el;const start=()=>{const target=Math.max(0,(+p.pos||0)+(p.play!==false&&p.at?(Date.now()-p.at)/1000:0));try{if(isFinite(el.duration)&&target<el.duration)el.currentTime=target}catch(e){}if(p.play!==false){const r=el.play();if(r&&r.catch)r.catch(()=>{const g=document.getElementById('musGo');if(g)g.style.display='block'})}else el.pause();musVolApply()};el.addEventListener('loadedmetadata',start,{once:true});el.addEventListener('play',()=>{const g=document.getElementById('musGo');if(g)g.style.display='none'});el.addEventListener('error',()=>{const ti=document.getElementById('musTi');if(ti)ti.textContent='Não foi possível carregar a mídia'});if(el.readyState>=1)start()}else if(musEng.media){musEng.pub=p;try{const el=musEng.media,target=Math.max(0,(+p.pos||0)+(p.play!==false&&p.at?(Date.now()-p.at)/1000:0));if(Math.abs((el.currentTime||0)-target)>1.5&&isFinite(el.duration)&&target<el.duration)el.currentTime=target;if(p.play===false)el.pause();else{const r=el.play();if(r&&r.catch)r.catch(()=>{const g=document.getElementById('musGo');if(g)g.style.display='block'})}musVolApply()}catch(e){}}if(musIsGm()&&window.__MZ&&!window.__MZ.local&&!musEng.iv)musEng.iv=setInterval(()=>{const el=musEng.media;if(el&&window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:el.currentTime||0,play:MUS.play,vol:MUS.vol,at:Date.now()})},2500);return;
+   }else if(p.src==='sp'){musEng.pub=p;if(musEng.key!==key){if(musEng.yt){try{musEng.yt.destroy()}catch(e){}musEng.yt=null}if(musEng.media){try{musEng.media.pause();musEng.media.removeAttribute('src');musEng.media.load()}catch(e){}musEng.media=null}musEng.key=key;const h=(p.kind==='track'||p.kind==='episode')?152:352;b.querySelector('#musFr').innerHTML='<iframe title="Spotify" style="border:0;width:100%;height:'+h+'px;display:block" src="https://open.spotify.com/embed/'+p.kind+'/'+p.id+'?utm_source=generator&theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>'}return}
   await musLoadAPI();if(!(window.YT&&YT.Player)){b.querySelector('#musTi').textContent='Sem acesso ao YouTube neste aparelho';return}
-  if(musEng.key!==key){musEng.key=key;musEng.pub=p;const fr=b.querySelector('#musFr');fr.innerHTML='<div id="musYT"></div>';fr.style.pointerEvents='none';try{if(musEng.yt&&musEng.yt.destroy)musEng.yt.destroy()}catch(e){}
-    const cfg={width:'100%',height:'130',playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,controls:0,disablekb:1,iv_load_policy:3,modestbranding:1,fs:0},p.list?{list:p.list,listType:'playlist'}:{}),events:{onReady:e=>{musVolApply();if(p.loop&&p.list)try{e.target.setLoop(true)}catch(x){}if(p.pos>1)e.target.seekTo(p.pos,true);if(p.play===false)e.target.pauseVideo();else{e.target.playVideo();setTimeout(()=>{try{if(musEng.pub&&musEng.pub.play!==false&&e.target.getPlayerState()!==1){const g=document.getElementById('musGo');if(g)g.style.display=''}}catch(x){}},1800)}},
+  if(musEng.key!==key){if(musEng.media){try{musEng.media.pause();musEng.media.removeAttribute('src');musEng.media.load()}catch(e){}musEng.media=null}musEng.key=key;musEng.pub=p;const fr=b.querySelector('#musFr');fr.innerHTML='<div id="musYT"></div>';fr.style.pointerEvents='none';try{if(musEng.yt&&musEng.yt.destroy)musEng.yt.destroy()}catch(e){}
+    const cfg={width:'100%',height:'130',playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,controls:0,disablekb:1,iv_load_policy:3,modestbranding:1,fs:0},p.list?{list:p.list,listType:'playlist'}:{}),events:{onReady:e=>{musVolApply();if(p.loop&&p.list)try{e.target.setLoop(true)}catch(x){}const startPos=Math.max(0,(+p.pos||0)+(p.play!==false&&p.at?(Date.now()-p.at)/1000:0));if(startPos>1)e.target.seekTo(startPos,true);if(p.play===false)e.target.pauseVideo();else{e.target.playVideo();setTimeout(()=>{try{if(musEng.pub&&musEng.pub.play!==false&&e.target.getPlayerState()!==1){const g=document.getElementById('musGo');if(g)g.style.display=''}}catch(x){}},1800)}},
       onStateChange:e=>{if(e.data===1){const g=document.getElementById('musGo');if(g)g.style.display='none'}
         if(e.data===0){const q=musEng.pub||{};if(q.loop&&!q.list){e.target.seekTo(0);e.target.playVideo()}else if(musIsGm()&&!q.list)musAct('next|')}}}};
     if(p.id)cfg.videoId=p.id;musEng.yt=new YT.Player('musYT',cfg)}
-  else if(musEng.yt&&musEng.yt.getPlayerState){const pv=musEng.pub;musEng.pub=p;try{if(pv&&pv.play!==p.play){if(p.play===false)musEng.yt.pauseVideo();else musEng.yt.playVideo()}if(pv&&pv.loop!==p.loop&&musEng.yt.setLoop&&p.list)musEng.yt.setLoop(!!p.loop);musVolApply()}catch(e){}}
-  if(musIsGm()&&window.__MZ&&!window.__MZ.local&&!musEng.iv)musEng.iv=setInterval(()=>{const y=musEng.yt;if(y&&y.getCurrentTime&&window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:y.getCurrentTime(),play:MUS.play,vol:MUS.vol})},4000)}
-function musSync(m){const pv=musEng.pub;if(!pv||pv.k!==m.k||!musEng.yt||!musEng.yt.getCurrentTime)return;pv.vol=m.vol;pv.play=m.play;try{musVolApply();const c=musEng.yt.getCurrentTime();if(m.play&&Math.abs(c-m.pos-.3)>2.5)musEng.yt.seekTo(m.pos+.3,true)}catch(e){}}
-function musPub(){const t=musTr();if(!t||!MUS.k)return null;let pos=0;try{pos=musEng.yt&&musEng.yt.getCurrentTime?musEng.yt.getCurrentTime():0}catch(e){}return {k:MUS.k,src:t.src,id:t.id||'',list:t.list||'',kind:t.kind||'',ti:t.ti||'',loop:!!MUS.loop,play:!!MUS.play,vol:MUS.vol,pos:pos}}
+  else if(musEng.yt&&musEng.yt.getPlayerState){musEng.pub=p;try{const target=Math.max(0,(+p.pos||0)+(p.play!==false&&p.at?(Date.now()-p.at)/1000:0)),cur=musEng.yt.getCurrentTime?musEng.yt.getCurrentTime():0,state=musEng.yt.getPlayerState();if(Math.abs(cur-target)>1.8)musEng.yt.seekTo(target,true);if(p.play===false&&state===1)musEng.yt.pauseVideo();else if(p.play!==false&&state!==1)musEng.yt.playVideo();if(musEng.yt.setLoop&&p.list)musEng.yt.setLoop(!!p.loop);musVolApply()}catch(e){}}
+  if(musIsGm()&&window.__MZ&&!window.__MZ.local&&!musEng.iv)musEng.iv=setInterval(()=>{let pos=null;const y=musEng.yt;if(y&&y.getCurrentTime){try{pos=y.getCurrentTime()}catch(e){}}else if(musEng.media)pos=musEng.media.currentTime||0;if(pos!==null&&window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:pos,play:MUS.play,vol:MUS.vol,at:Date.now()})},2500)}
+function musSync(m){const pv=musEng.pub;if(!pv||pv.k!==m.k)return;pv.vol=m.vol;pv.play=m.play;try{musVolApply();const target=Math.max(0,(+m.pos||0)+(m.play&&m.at?(Date.now()-m.at)/1000:0));if(musEng.media){const el=musEng.media;if(Math.abs((el.currentTime||0)-target)>1.5&&isFinite(el.duration)&&target<el.duration)el.currentTime=target;if(m.play){const r=el.play();if(r&&r.catch)r.catch(()=>{const g=document.getElementById('musGo');if(g)g.style.display='block'})}else el.pause();return}const y=musEng.yt;if(!y||!y.getCurrentTime)return;const c=y.getCurrentTime(),state=y.getPlayerState?y.getPlayerState():-1;if(Math.abs(c-target)>1.8)y.seekTo(target,true);if(m.play&&state!==1)y.playVideo();else if(!m.play&&state===1)y.pauseVideo()}catch(e){}}
+function musPub(){const t=musTr();if(!t||!MUS.k)return null;let pos=0;try{if(musEng.pub&&musEng.pub.k===MUS.k&&musEng.yt&&musEng.yt.getCurrentTime)pos=musEng.yt.getCurrentTime();else if(musEng.pub&&musEng.pub.k===MUS.k&&musEng.media)pos=musEng.media.currentTime||0}catch(e){}return {k:MUS.k,src:t.src,id:t.id||'',url:t.url||'',list:t.list||'',kind:t.kind||'',ti:t.ti||'',loop:!!MUS.loop,play:!!MUS.play,vol:MUS.vol,pos:pos,at:Date.now()}}
 function musRecv(p){if(!window.__MZ||window.__MZ.gm)return;if(!p){if(musEng.pub)musApply(null);return}musApply(p)}
-function musCommit(playNow){clearTimeout(musTm);musTm=setTimeout(musSave,600);if(playNow)musApply(musPub());cmbRedraw();if(window.__mzRedraw)window.__mzRedraw()}
+function musCommit(playNow){clearTimeout(musTm);musTm=setTimeout(musSave,600);const pub=musPub();if(playNow)musApply(pub);if(window.__MZ&&!window.__MZ.local&&window.__mzSend)window.__mzSend({t:'mus',p:pub});cmbRedraw();if(window.__mzRedraw)window.__mzRedraw()}
 async function musSave(){if(!sb||!sbUser||!CAMP.cur||CAMP.cur.owner!==sbUser.id)return;try{await sb.from('campaign_chars').upsert({campaign_id:CAMP.cur.id,char_id:'mus_main',owner:sbUser.id,snapshot:{pls:MUS.pls,loop:MUS.loop,vol:MUS.vol},updated_at:new Date().toISOString()})}catch(e){}}
 function musLoad(row){MUS.pls=(row&&row.pls&&row.pls.length)?row.pls:(row&&row.list?[{id:'p1',name:'Playlist 1',list:row.list}]:[{id:'p1',name:'Playlist 1',list:[]}]);MUS.pl=0;MUS.pp=0;MUS.cur=-1;MUS.loop=!!(row&&row.loop);MUS.vol=row&&row.vol!=null?row.vol:100;MUS.play=false;MUS.k=0}
 /* ===== Baralho do mestre: cartas customizáveis com sorteio em 3D ===== */
@@ -1596,8 +1768,9 @@ function dekHtml(mode){dekCss();if(!dekGm())return dekHtmlP();
   return h}
 
 window.musSetUrl=v=>{MUS.url=v};window.musSetNm=v=>{MUS.nm=v};window.musSetQ=v=>{MUS.q=v};
-window.musSeekU=v=>{if(!musIsGm())return;MUS.drag=false;const y=musEng.yt;if(y&&y.seekTo){try{y.seekTo(+v,true)}catch(e){}if(window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:+v,play:MUS.play,vol:MUS.vol,seek:1})}};
-window.musVolU=v=>{if(!musIsGm())return;MUS.vol=+v;if(musEng.pub)musEng.pub.vol=MUS.vol;musVolApply();if(window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:(musEng.yt&&musEng.yt.getCurrentTime?musEng.yt.getCurrentTime():0),play:MUS.play,vol:MUS.vol});clearTimeout(musTm);musTm=setTimeout(musSave,800)};
+window.musUpload=async el=>{const f=el&&el.files&&el.files[0];if(!f)return;if(!musIsGm()){MUS.err='Somente o mestre pode enviar arquivos.';cmbRedraw();return}if(!sb||!sbUser||!CAMP.cur){MUS.err='Entre na mesa e faça login para enviar arquivos.';cmbRedraw();return}if(f.size>100*1024*1024){MUS.err='O arquivo deve ter no máximo 100 MB.';cmbRedraw();return}if(!/^audio\//i.test(f.type)&&!/^video\//i.test(f.type)){MUS.err='Formato não reconhecido. Envie áudio ou vídeo MP4/WebM.';cmbRedraw();return}MUS.err='Enviando arquivo…';cmbRedraw();try{const ext=(f.name.match(/\.[a-z0-9]{2,5}$/i)||[''])[0].toLowerCase()||'.bin',path=String(CAMP.cur.id)+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+ext;const up=await sb.storage.from('cdm-media').upload(path,f,{upsert:false,contentType:f.type||undefined,cacheControl:'3600'});if(up.error)throw up.error;const pub=sb.storage.from('cdm-media').getPublicUrl(path);const url=pub&&pub.data&&pub.data.publicUrl;if(!url)throw new Error('Não foi possível obter o link público do arquivo.');MUS.url=url;MUS.nm=f.name.replace(/\.[^.]+$/,'');MUS.err='';await musAct('addplay|');}catch(e){MUS.err=(e&&e.message?e.message:'Falha no envio')+' — confira se o bucket cdm-media existe e permite upload.';cmbRedraw()}finally{if(el)el.value=''}};
+window.musSeekU=v=>{if(!musIsGm())return;MUS.drag=false;const y=musEng.yt;if(y&&y.seekTo){try{y.seekTo(+v,true)}catch(e){}if(window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:+v,play:MUS.play,vol:MUS.vol,seek:1,at:Date.now()})}};
+window.musVolU=v=>{if(!musIsGm())return;MUS.vol=+v;if(musEng.pub)musEng.pub.vol=MUS.vol;musVolApply();if(window.__mzSend&&MUS.k)window.__mzSend({t:'mt',k:MUS.k,pos:(musEng.yt&&musEng.yt.getCurrentTime?musEng.yt.getCurrentTime():0),play:MUS.play,vol:MUS.vol,at:Date.now()});clearTimeout(musTm);musTm=setTimeout(musSave,800)};
 window.musRen=v=>{musPl().name=v;clearTimeout(musTm);musTm=setTimeout(musSave,800)};
 setInterval(()=>{const y=musEng.yt,t=document.getElementById('msT'),r=document.getElementById('msR');if(!y||!y.getCurrentTime||!t)return;try{const c=y.getCurrentTime(),d=y.getDuration?y.getDuration():0;t.textContent=musFmt(c)+' / '+musFmt(d);if(r&&!MUS.drag){r.max=Math.max(1,Math.floor(d));r.value=Math.floor(c)}}catch(e){}},500);
 const musA=(mode,act,arg,label,cls,x)=>mode==='z'?'<button class="bt'+(cls?' '+cls:'')+'" data-z="mus" data-v="'+esc(act+'|'+(arg==null?'':arg))+'"'+(x||'')+'>'+label+'</button>':'<button class="kb'+(cls==='p'?' pri':cls==='d'?' bad':'')+'" data-h="km" data-v="'+esc(act+'|'+(arg==null?'':arg))+'"'+(x||'')+'>'+label+'</button>';
@@ -1609,7 +1782,7 @@ function musHtmlView(mode){const q=musEng.pub,dis=' disabled style="opacity:.45;
     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">'+musA(mode,'prev','','⏮','',dis)+musA(mode,'pp','',q&&q.play!==false?'⏸ Pausar':'▶ Tocar','p',dis)+musA(mode,'next','','⏭','',dis)+musA(mode,'stop','','⏹ Parar','',dis)+musA(mode,'loop','',q&&q.loop?'🔁 Loop: ligado':'➡ Normal',q&&q.loop?'p':'',dis)+'</div>'+
     '<div style="margin-top:12px;font-size:.85rem">Volume do mestre: <b>'+(vo!=null?vo+'%':'—')+'</b></div><input type="range" min="0" max="100" value="'+(vo!=null?vo:0)+'" disabled style="opacity:.6"><div class="muted" style="font-size:.78rem;margin-top:8px">Só o mestre escolhe a música e controla o volume. Para o seu volume, use o player no canto da tela.</div></div>'}
   else{const pl=musPl();body='<div class="msb"><div style="display:flex;gap:6px;flex-wrap:wrap">'+MUS.pls.map((x,i)=>musA(mode,'selpl',i,esc(x.name)+' ('+x.list.length+')',i===MUS.pl?'p':'')).join('')+'</div></div>'+
-    (pl.list.length?pl.list.map(x=>{const on=!!q&&q.src===x.src&&(q.id||'')===(x.id||'')&&(q.list||'')===(x.list||'')&&(q.kind||'')===(x.kind||'');return '<div class="msr'+(on?' on':'')+'"><span>'+(x.src==='yt'?'▶':'♫')+'</span><span class="t">'+esc(x.ti||x.url||'faixa')+'</span>'+(on?'<span class="muted">tocando</span>':'')+'</div>'}).join(''):'<p class="muted">Nenhuma música nesta playlist.</p>')}
+    (pl.list.length?pl.list.map(x=>{const on=!!q&&q.src===x.src&&(q.id||'')===(x.id||'')&&(q.list||'')===(x.list||'')&&(q.kind||'')===(x.kind||'');return '<div class="msr'+(on?' on':'')+'"><span>'+(x.src==='yt'?'▶':x.src==='sp'?'♫':x.kind==='video'?'▣':'♪')+'</span><span class="t">'+esc(x.ti||x.url||'faixa')+'</span>'+(on?'<span class="muted">tocando</span>':'')+'</div>'}).join(''):'<p class="muted">Nenhuma música nesta playlist.</p>')}
   return musCss+tabs+body}
 function musHtml(mode){const gm=musIsGm(),t=musTr();
   if(!gm)return musHtmlView(mode);
@@ -1620,20 +1793,20 @@ function musHtml(mode){const gm=musIsGm(),t=musTr();
     '<div style="margin-top:12px;font-size:.85rem">Volume para todos: <b>'+MUS.vol+'%</b></div><input type="range" min="0" max="100" value="'+MUS.vol+'" oninput="musVolU(this.value)" onchange="musVolU(this.value)"></div>'}
   else if(MUS.tab==='pl'){const pl=musPl();
     body='<div class="msb"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+MUS.pls.map((x,i)=>musA(mode,'selpl',i,esc(x.name)+' ('+x.list.length+')',i===MUS.pl?'p':'')).join('')+musA(mode,'newpl','','+ Nova')+'</div><div style="display:flex;gap:6px;align-items:center"><input class="msi" value="'+esc(pl.name)+'" onchange="musRen(this.value)" placeholder="Nome da playlist">'+(MUS.pls.length>1?musA(mode,'delpl','','Excluir','d'):'')+'</div></div>'+
-    '<div class="msb"><input class="msi" placeholder="Link do YouTube ou Spotify" value="'+esc(MUS.url)+'" oninput="musSetUrl(this.value)" style="margin-bottom:6px"><input class="msi" placeholder="Nome (opcional)" value="'+esc(MUS.nm)+'" oninput="musSetNm(this.value)"><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+musA(mode,'add','','Adicionar','p')+musA(mode,'addplay','','Adicionar e tocar')+'</div>'+(MUS.err?'<p style="color:#e5484d;font-size:.85rem">'+esc(MUS.err)+'</p>':'')+
+    '<div class="msb"><input class="msi" placeholder="Link YouTube/Spotify ou URL direta MP3/MP4" value="'+esc(MUS.url)+'" oninput="musSetUrl(this.value)" style="margin-bottom:6px"><input class="msi" placeholder="Nome (opcional)" value="'+esc(MUS.nm)+'" oninput="musSetNm(this.value)"><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+musA(mode,'add','','Adicionar','p')+musA(mode,'addplay','','Adicionar e tocar')+'</div><div style="margin-top:10px;padding:10px;border:1px dashed #a347ff;border-radius:8px;background:#17121d;font-size:.9rem"><b style="display:block;margin-bottom:6px">Enviar música ou vídeo do dispositivo</b><label style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#a347ff;color:#fff;border-radius:6px;cursor:pointer;font-weight:700"> <span>＋ Escolher arquivo MP3 / MP4</span><input type="file" accept=".mp3,.mp4,.m4a,.ogg,.wav,.webm,.mov,audio/*,video/*" onchange="musUpload(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden"></label><small class="muted" style="display:block;margin-top:7px">Somente o mestre pode enviar. O arquivo será compartilhado com os jogadores pelo armazenamento do Códice.</small></div>'+(MUS.err?'<p style="color:#e5484d;font-size:.85rem">'+esc(MUS.err)+'</p>':'')+
     '<div style="display:flex;gap:6px;margin-top:10px"><input class="msi" placeholder="Procurar música no YouTube" value="'+esc(MUS.q)+'" oninput="musSetQ(this.value)">'+musA(mode,'srch','','Buscar')+'</div><div class="muted" style="font-size:.75rem;margin-top:4px">A busca abre o YouTube em outra aba: copie o link da música e cole acima.</div></div>'+
-    (pl.list.length?pl.list.map((x,i)=>'<div class="msr'+(MUS.pp===MUS.pl&&i===MUS.cur?' on':'')+'"><span>'+(x.src==='yt'?'▶':'♫')+'</span><span class="t">'+esc(x.ti||x.url)+'</span>'+musA(mode,'play',i,'Tocar','p')+musA(mode,'rm',i,'✕','d')+'</div>').join(''):'<p class="muted">Playlist vazia. Cole um link acima.</p>')}
-  else body='<div class="msb"><b>Como funciona</b><p class="muted" style="font-size:.85rem;margin:6px 0">Só você (mestre) controla a música: tocar, pausar, pular, repetir, volume geral e parar valem para todos na mesa, com o tempo sincronizado. Cada jogador só ajusta o próprio volume.</p><p class="muted" style="font-size:.85rem;margin:6px 0">YouTube: pausa, loop, volume e posição sincronizados (apenas vídeos/playlists públicos). Spotify: abre o player do Spotify para todos; cada um aperta play nele, e músicas completas exigem estar logado no Spotify.</p><div style="margin-top:8px">'+musA(mode,'stop','','⏹ Parar a música de todos','d')+'</div></div>';
+    (pl.list.length?pl.list.map((x,i)=>'<div class="msr'+(MUS.pp===MUS.pl&&i===MUS.cur?' on':'')+'"><span>'+(x.src==='yt'?'▶':x.src==='sp'?'♫':x.kind==='video'?'▣':'♪')+'</span><span class="t">'+esc(x.ti||x.url)+'</span>'+musA(mode,'play',i,'Tocar','p')+musA(mode,'rm',i,'✕','d')+'</div>').join(''):'<p class="muted">Playlist vazia. Cole um link acima.</p>')}
+  else body='<div class="msb"><b>Como funciona</b><p class="muted" style="font-size:.85rem;margin:6px 0">Só você (mestre) controla a música: tocar, pausar, pular, repetir, volume geral e parar valem para todos na mesa, com o tempo sincronizado. Cada jogador só ajusta o próprio volume.</p><p class="muted" style="font-size:.85rem;margin:6px 0">Arquivos MP3/MP4 enviados ao armazenamento do Códice tocam no player próprio, sem anúncios inseridos por plataformas externas, e sincronizam play, pausa e posição. Cada jogador pode precisar tocar em “Ativar a música” uma vez por causa das regras do navegador. YouTube e Spotify continuam como opções externas, sujeitas às regras e anúncios de cada serviço.</p><div style="margin-top:8px">'+musA(mode,'stop','','⏹ Parar a música de todos','d')+'</div></div>';
   return musCss+tabs+body}
 window.MUS_drag=v=>{MUS.drag=v};
-async function musAct(v){const i=v.indexOf('|'),a=v.slice(0,i),g=v.slice(i+1);if(!musIsGm()){if(a==='tab')MUS.tab=g==='pl'?'pl':'now';else if(a==='selpl')MUS.pl=+g;else return;cmbRedraw();if(window.__mzRedraw)window.__mzRedraw();return}const redraw=()=>{cmbRedraw();if(window.__mzRedraw)window.__mzRedraw()};
+async function musAct(v){const i=v.indexOf('|'),a=v.slice(0,i),g=v.slice(i+1);if(!musIsGm()){if(a==='localstop'){musLocalStopped=true;try{if(musEng.media)musEng.media.pause();if(musEng.yt&&musEng.yt.pauseVideo)musEng.yt.pauseVideo();if(musEng.pub&&musEng.pub.src==='sp'&&musEng.box){const fr=musEng.box.querySelector('#musFr');if(fr)fr.innerHTML='<div style="padding:18px;text-align:center;background:#1b1b1b;color:#ddd">Reprodução parada apenas neste aparelho.</div>'}}catch(e){}return}if(a==='tab')MUS.tab=g==='pl'?'pl':'now';else if(a==='selpl')MUS.pl=+g;else return;cmbRedraw();if(window.__mzRedraw)window.__mzRedraw();return}const redraw=()=>{cmbRedraw();if(window.__mzRedraw)window.__mzRedraw()};
   if(a==='tab'){MUS.tab=g;redraw();return}
   if(a==='selpl'){MUS.pl=+g;redraw();return}
   if(a==='newpl'){MUS.pls.push({id:'p'+Date.now(),name:'Playlist '+(MUS.pls.length+1),list:[]});MUS.pl=MUS.pls.length-1;musCommit(false);return}
   if(a==='delpl'){if(MUS.pls.length<2||!confirm('Excluir esta playlist?'))return;if(MUS.pp===MUS.pl){MUS.cur=-1;MUS.k=0;MUS.play=false;musStop()}MUS.pls.splice(MUS.pl,1);MUS.pl=0;MUS.pp=Math.min(MUS.pp,MUS.pls.length-1);musCommit(false);return}
   if(a==='srch'){if(MUS.q.trim())window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(MUS.q.trim()),'_blank','noopener');return}
-  if(a==='add'||a==='addplay'){const url=String(MUS.url||'').trim(),p=musParse(url);if(!p){MUS.err='Link não reconhecido. Use um link do YouTube ou do Spotify.';redraw();return}MUS.err='';
-    const ti=(MUS.nm||'').trim()||await musTitle(p,url)||(p.src==='yt'?'Vídeo do YouTube':'Faixa do Spotify'),pl=musPl();pl.list.push(Object.assign({url:url,ti:ti},p));MUS.url='';MUS.nm='';
+  if(a==='add'||a==='addplay'){const url=String(MUS.url||'').trim(),p=musParse(url);if(!p){MUS.err='Link não reconhecido. Use YouTube, Spotify ou um link direto de arquivo MP3/MP4.';redraw();return}MUS.err='';
+    const ti=(MUS.nm||'').trim()||await musTitle(p,url)||(p.src==='yt'?'Vídeo do YouTube':p.src==='sp'?'Faixa do Spotify':decodeURIComponent((new URL(p.url)).pathname.split('/').pop()||'Mídia')),pl=musPl();pl.list.push(Object.assign({url:url,ti:ti},p));MUS.url='';MUS.nm='';
     if(a==='addplay'){MUS.pp=MUS.pl;MUS.cur=pl.list.length-1;MUS.k=Date.now();MUS.play=true;MUS.tab='now';musCommit(true)}else musCommit(false);return}
   if(a==='play'){MUS.pp=MUS.pl;MUS.cur=+g;MUS.k=Date.now();MUS.play=true;MUS.tab='now';musCommit(true)}
   else if(a==='pp'){if(MUS.cur<0&&musPl().list.length){MUS.pp=MUS.pl;MUS.cur=0;MUS.k=Date.now()}if(!musTr())return;MUS.play=!MUS.play;musCommit(true)}
@@ -2737,6 +2910,7 @@ function mzRecv(p){if(!p)return;const M=MZ.M;
   if(p.t==='hello'){if(MZ.gm)mzPub(true)}
   else if(p.t==='want'){mzSendWorld(p.id)}
   else if(p.t==='state'&&!MZ.gm){const old=M.scenes;M.scenes=p.scenes.map(s=>Object.assign({},s,{img:(old.find(o=>o.id===s.id)||{}).img||MZ.pimg[s.id]||''}));const ch=M.live!==p.live;M.live=p.live;M.tokens=p.tokens;M.rolls=p.rolls;MZ.view=p.live;if(ch){MZ.form=null;mzFit()}if(MZ.sel&&!mzTok(MZ.sel))MZ.sel=null;p.scenes.forEach(s=>{if(s.wm)mzWorldNeed(s.wm)});mzTokNeed(p.tokens);{const nc=p.cmb||null;if(nc&&(!CMBP||CMBP.id!==nc.id))note('Um combate começou! Abra a aba Combate.');CMBP=nc;{const nd=p.dek||[],ch2=nd.length!==DEKV.length;DEKV=nd;if(ch2)mzNav();if(MZ.panel==='bar')mzPanel()}if(MZ.panel==='cmb'||MZ.panel==='esc')mzPanel();musRecv(p.mus)}mzAll()}
+  else if(p.t==='mus'){if(!MZ.gm)musRecv(p.p)}
   else if(p.t==='mt'){if(!MZ.gm)musSync(p)}
   else if(p.t==='dk'){if(!MZ.gm)dekRecv(p)}
   else if(p.t==='tup'&&MZ.gm){const t=mzTok(p.id);if(t&&mzOwns(t,p.u)){if(p.sz!=null)t.sz=Math.max(.25,Math.min(12,+p.sz||1));if(p.rot!=null)t.rot=+p.rot||0;if('glb' in p){if(p.glb){t.glb=p.glb;t.glbn=p.glbn;t.gsz=p.gsz||0}else{delete t.glb;delete t.glbn;delete t.gsz}}mzCommit();mzTokNeed([t])}}
