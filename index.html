@@ -3085,7 +3085,7 @@ function mzNav(){const it=[['age','Agentes','☗'],['tok','Tokens','◎'],['lux'
   document.getElementById('mz').classList.toggle('nc',MZ.navc)}
 function mzLayout(){const p=document.getElementById('mzPanel');if(!p)return;p.style.display=MZ.panel?'flex':'none';mzNav();mzPanel();setTimeout(()=>{mzDraw()},0)}
 function mzStage(){const z=document.getElementById('mzZoom'),ov=document.getElementById('mzOv'),sc=mzScene();if(!z)return;
-  z.innerHTML=sc?'<button data-z="zo">−</button><span>'+(MZ.is3d?'3D':Math.round(MZ.cam.z*100)+'%')+'</span><button data-z="zi">+</button><button class="t" data-z="fit" title="Ajustar à tela">AJUSTAR</button><button class="t'+(MZ.snap?' on':'')+'" data-z="snap" title="Encaixar tokens na grade">ENCAIXAR</button><button class="t'+(MZ.is3d?' on':'')+'" data-z="m3" title="Alternar entre 2D e 3D">'+(MZ.is3d?'2D':'3D')+'</button>'+(MZ.is3d?'<button class="t" data-z="rl" title="Girar">↺</button><button class="t" data-z="rr" title="Girar">↻</button><button class="t" data-z="tu" title="Inclinar">▲</button><button class="t" data-z="td" title="Inclinar">▼</button><button class="t'+(mz3.free?' on':'')+'" data-z="fl" title="Câmera livre: olhar para qualquer lado (botão direito ou Alt arrasta para olhar; W A S D andam; Q E descem e sobem)">LIVRE</button> <button class="t'+(mz3.pan?' on':'')+'" data-z="t3p" title="Editar terreno 3D: relevo, caminho, árvores">TERRENO</button><button class="t'+(mz3.rel?' on':'')+'" data-z="rel" title="Relevo 3D do mapa: desligado / suave / normal / alto">RELEVO '+['OFF','1','2','3'][mz3.rel]+'</button>':''):'';
+  z.innerHTML=sc?'<button data-z="zo">−</button><span>'+(MZ.is3d?'3D':Math.round(MZ.cam.z*100)+'%')+'</span><button data-z="zi">+</button><button class="t" data-z="fit" title="Ajustar à tela">AJUSTAR</button><button class="t'+(MZ.snap?' on':'')+'" data-z="snap" title="Encaixar tokens na grade">ENCAIXAR</button><button class="t'+(MZ.is3d?' on':'')+'" data-z="m3" title="Alternar entre 2D e 3D">'+(MZ.is3d?'2D':'3D')+'</button>'+(MZ.gm&&mzLuxAny(sc)?'<button class="t'+(MZ.ltHide?'':' on')+'" data-z="lux:mk" title="Mostrar ou esconder os ícones das luzes">💡 ÍCONES</button>':'')+(MZ.is3d?'<button class="t" data-z="rl" title="Girar">↺</button><button class="t" data-z="rr" title="Girar">↻</button><button class="t" data-z="tu" title="Inclinar">▲</button><button class="t" data-z="td" title="Inclinar">▼</button><button class="t'+(mz3.free?' on':'')+'" data-z="fl" title="Câmera livre: olhar para qualquer lado (botão direito ou Alt arrasta para olhar; W A S D andam; Q E descem e sobem)">LIVRE</button> <button class="t'+(mz3.pan?' on':'')+'" data-z="t3p" title="Editar terreno 3D: relevo, caminho, árvores">TERRENO</button><button class="t'+(mz3.rel?' on':'')+'" data-z="rel" title="Relevo 3D do mapa: desligado / suave / normal / alto">RELEVO '+['OFF','1','2','3'][mz3.rel]+'</button>':''):'';
   let h='';if(!sc){if(MZ.gm)h=mzForm(true);else h='<div class="center"><div class="box"><h1>Aguardando o mestre</h1><p>Nenhuma cena foi exibida para os jogadores ainda.</p></div></div>'}else if(MZ.form&&MZ.form.first)h=mzForm(true);ov.innerHTML=h;mzTplThumbs()}
 function mzForm(first){const f=MZ.form||(MZ.form={k:'scene',name:'',img:null});return '<div class="center"><div class="box"><h1>Mesa Virtual</h1><p style="margin:6px 0 28px;opacity:.85">Para começar, você vai precisar criar uma cena.</p><label class="fl">Nome da Cena</label><input class="full" data-f="name" value="'+esc(f.name)+'" placeholder="Ex: Taverna do Javali"><label class="fl">Imagem do mapa</label><label class="drop">'+(f.img?'<img alt="" src="'+f.img+'">':'Clique para selecionar o arquivo')+'<input type="file" accept="image/*" data-file="scene" hidden></label>'+mzCropUI(f)+mzWorldPick(f)+'<div class="row"><label class="bt full" style="flex:1;text-align:center;cursor:pointer">Escolher outra imagem<input type="file" accept="image/*" data-file="scene" hidden></label><button class="bt p" style="flex:1" data-z="mkscene">Confirmar</button>'+(MZ.M.scenes.length?'<button class="bt" data-z="cancelform">Cancelar</button>':'')+'</div>'+mzTplGallery()+'</div></div>'}
 function mzCard(a){const s=a.s||{},hide=s.pr&&!MZ.gm&&a.owner!==mzUid(),bars=hide?{}:(s.bars||{}),at=hide?[]:(s.at||[]);
@@ -3206,6 +3206,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.d
 /* ================= LUZ DA MESA (iluminação 2D e 3D) ================= */
 const MZ_LUX={tocha:{n:'Tocha',r:6,c:'#ff9a3c',i:90,fl:1,w:360},vela:{n:'Vela',r:2.5,c:'#ffc36b',i:75,fl:1,w:360},fogueira:{n:'Fogueira',r:8,c:'#ff7a1a',i:95,fl:1,w:360},lampiao:{n:'Lampião',r:7,c:'#ffe2a8',i:90,fl:0,w:360},luar:{n:'Luar',r:14,c:'#9db8ff',i:55,fl:0,w:360},magica:{n:'Luz mágica',r:6,c:'#b07bff',i:85,fl:0,w:360},holofote:{n:'Holofote',r:12,c:'#ffffff',i:95,fl:0,w:50,a:180}};
 const mzLt=sc=>sc.lt||(sc.lt={on:0,dk:0,tn:'#05070f',pts:[]});
+const mzLuxAny=sc=>!!(sc&&sc.lt&&sc.lt.pts&&sc.lt.pts.length);
+try{MZ.ltHide=localStorage.getItem('mzLtHide')==='1'}catch(e){}
+function mzLuxToggleMk(on){MZ.ltHide=on==null?!MZ.ltHide:!on;try{localStorage.setItem('mzLtHide',MZ.ltHide?'1':'')}catch(e){}if(MZ.drag&&MZ.drag.k==='lux')MZ.drag=null;mzStage();mzPanel();mzDraw()}
 function mzHexRgb(h){const m=/^#?([0-9a-f]{6})$/i.exec(String(h||''));const n=m?parseInt(m[1],16):0;return[n>>16&255,n>>8&255,n&255]}
 const mzRgba=(h,a)=>{const c=mzHexRgb(h);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'};
 const mzLuxDim=()=>MZ.gm&&!MZ.ltPrev?.55:1;
@@ -3259,11 +3262,12 @@ function mzLuxClick(a,v){const sc=mzScene();if(!sc||!MZ.gm)return;const lt=mzLt(
   else if(k==='sel'){MZ.lsel=v;mzAll()}
   else if(k==='del'){lt.pts=lt.pts.filter(q=>q.id!==v);if(MZ.lsel===v)MZ.lsel=null;mzCommit()}
   else if(k==='tk'){MZ.sel=v;mzAll()}
+  else if(k==='mk')mzLuxToggleMk()
   else if(k==='off'){lt.pts=[];lt.dk=0;lt.on=0;MZ.lsel=null;mzM_clearTk(sc);mzCommit()}}
 function mzM_clearTk(sc){MZ.M.tokens.forEach(t=>{if(t.sc===sc.id)delete t.lt})}
 function mzLuxSet(t,live){const sc=mzScene();if(!sc||!MZ.gm)return;const k=t.dataset.lx,v=t.type==='checkbox'?(t.checked?1:0):t.value;
   if(k==='prev'){MZ.ltPrev=!!t.checked;mzDraw();return}
-  if(k==='mk'){MZ.ltHide=!t.checked;mzDraw();return}
+  if(k==='mk'){mzLuxToggleMk(!!t.checked);return}
   const lt=mzLt(sc);
   if(k==='on')lt.on=v?1:0;
   else if(k==='dk')lt.dk=Math.max(0,Math.min(100,+v||0));
