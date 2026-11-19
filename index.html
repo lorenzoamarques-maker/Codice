@@ -2275,7 +2275,7 @@ function d3Roll(C,dice,onDone){const T=C.T;d3Clear(C);const L=[];dice.slice(0,12
       const m=ez(Math.min(1,p/.85));it.grp.position.set(it.sx+(it.ex-it.sx)*m,it.rest+h,it.ez-(1-m)*5);
       q.setFromAxisAngle(it.ax,it.A*(1-ez(p)));it.grp.quaternion.copy(it.target).multiply(q);
       it.sh.position.set(it.grp.position.x,.02,it.grp.position.z);const sc=2.4+h*.18;it.sh.scale.set(sc,sc,1);it.sh.material.opacity=Math.max(.12,.5-h*.05);
-      if(it.g&&p>=.9){const k=t-(it.t0+it.dur),pu=.5+.5*Math.sin(k/180),hex=D3COL[it.g],fade=Math.min(1,k/260);it.mat.emissive.setHex(hex);it.mat.emissiveIntensity=(.45+.45*pu)*fade;
+      if(it.g&&p>=.9){const k=t-(it.t0+it.dur),pu=.5+.5*Math.sin(k/180),hex=D3COL[it.g],fade=Math.min(1,k/260);it.mat.emissive.setHex(hex);if(it.g==='fail'){if(!it.c0)it.c0=it.mat.color.clone();it.mat.color.copy(it.c0).lerp(new T.Color(0x5a0716),fade)}it.mat.emissiveIntensity=(it.g==='fail'?.3+.3*pu:.45+.45*pu)*fade;
         it.halo.visible=true;it.halo.position.copy(it.grp.position);it.halo.position.y+=.2;const hs=(4.2+1.2*pu)*fade;it.halo.scale.set(hs,hs,1);it.halo.material.opacity=.85*fade;it.pl.position.copy(it.grp.position);it.pl.position.y+=1.6;it.pl.intensity=(30+25*pu)*fade}});
     C.r.render(C.s,C.cam);
     if(t<end)C.raf=requestAnimationFrame(tick);else if(!fin){fin=true;if(onDone)onDone()}};
@@ -2309,6 +2309,7 @@ async function d3Mesa(r){const L=d3FromMesa(r);if(!L.length)return;let el=docume
   catch(x){D3MP=null;el.classList.remove('on')}}
 
 function pushLog(e){state.log.unshift(e);if(state.log.length>40)state.log.pop();renderLog(e);try{d3Sheet(e)}catch(x){}
+ try{const z=window.__MZ;if(z&&!z.local&&z.ch&&window.__mzSend&&e.dice&&e.dice.length&&!(z.gm&&cmbHideRolls())){const cc=cur();window.__mzSend({t:'dsheet',who:(cc&&cc.name)||'Jogador',lb:e.label||'',ex:e.formula||'',det:e.detail||'',tot:e.total,dc:e.dice.slice(0,12).map(d=>[d.s,d.v])})}}catch(x){}
  try{const cc=cur();if(sb&&sbUser&&cc&&cc.camp)sb.from('rolls').insert({campaign_id:cc.camp,user_id:sbUser.id,who:cc.name,label:e.label,formula:e.formula||'',detail:e.detail||'',total:num(e.total)}).then(()=>{},()=>{})}catch(x){}}
 
 /* ---------- persistência ---------- */
@@ -2923,6 +2924,7 @@ function mzRecv(p){if(!p)return;const M=MZ.M;
       else if(p.k==='glb'){try{MZ.glbs[p.id]=mzUnB64(full)}catch(e){}}}}
   else if(p.t==='focus'&&!MZ.gm){const tk=mzTok(p.id),u=mzUid();if(tk&&tk.fcs&&(tk.fcs.indexOf('*')>=0||tk.fcs.indexOf(u)>=0)&&MZ.view===p.sc){mzFocus(p.id);note('O mestre focou em '+tk.name+'.')}}
   else if(p.t==='mv'){const t=mzTok(p.id);if(t&&(!MZ.gm||mzOwns(t,p.u))){t.x=p.x;t.y=p.y;mzDraw();if(MZ.gm)mzSave()}}
+  else if(p.t==='dsheet'){try{d3Mesa(p)}catch(x){}}
   else if(p.t==='roll'){M.rolls.unshift(p.r);M.rolls=M.rolls.slice(0,60);if(MZ.gm)mzSave();if(MZ.panel==='rol')mzPanel();mzToast(p.r)}}
 function mzSave(){if(!MZ.gm)return;clearTimeout(MZ.tm.s);MZ.tm.s=setTimeout(()=>mzSet('m_'+MZ.cid,MZ.M),350)}
 function mzCommit(withImg){mzSave();clearTimeout(MZ.tm.p);MZ.tm.p=setTimeout(()=>mzPub(withImg),120);mzAll()}
