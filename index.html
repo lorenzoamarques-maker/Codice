@@ -2776,7 +2776,8 @@ function act(a,t){
   case 'die':{
     const S=num(t.dataset.s),n=Math.max(1,Math.min(50,num($('#dCount').value)||1)),m=num($('#dMod').value),adv=advMode();
     const k=n+Math.abs(adv),low=adv<0,d=Array.from({length:k},()=>die(S)),pick=low?Math.min.apply(null,d):Math.max.apply(null,d);
-    pushLog({label:k+'d'+S,formula:k+'d'+S+fmt(m),detail:(k>1?'['+d.join(', ')+'] → '+pick+(low?' (menor)':' (maior)'):'['+d[0]+']')+fmt(m),total:pick+m,flag:S>=20?(pick===S?'crit':pick===1?'fail':''):''});
+    const fg=S>=20?(pick===S?'crit':pick===1?'fail':''):'',dc=d.slice(0,12).map(v=>({s:S,v:v,g:''}));if(fg){const q=dc.find(x=>x.v===pick);if(q)q.g=fg}
+    pushLog({label:k+'d'+S,formula:k+'d'+S+fmt(m),detail:(k>1?'['+d.join(', ')+'] → '+pick+(low?' (menor)':' (maior)'):'['+d[0]+']')+fmt(m),total:pick+m,flag:fg,dice:dc});
     break}
   case 'clear-log':state.log=[];renderLog();break;
   case 'copy-one':case 'copy-all':{
@@ -2936,7 +2937,7 @@ window.__mzSheetRoll=function(p){if(!MZ.M)return;const hid=(MZ.gm&&!MZ.local&&cm
 function mzSend(p){if(MZ.ch)try{MZ.ch.send({type:'broadcast',event:'m',payload:p})}catch(e){}}
 function mzPub(all){if(!MZ.gm||MZ.local)return;const M=MZ.M,live=M.live;if(all){MZ.sent={};MZ.sentg={};MZ.sentm='';mzTokNeed(M.tokens)}
   const vis=M.tokens.filter(t=>t.sc===live&&!t.hid);
-  mzSend({t:'state',live:live,scenes:M.scenes.filter(s=>s.id===live).map(s=>({id:s.id,name:s.name,w:s.w,h:s.h,cell:s.cell,grid:s.grid,gcol:s.gcol,wm:s.wm,wmn:s.wmn,wk:s.wk,wy:s.wy,wr:s.wr})),tokens:vis.map(t=>Object.assign({},t,{img:'',bimg:''})),rolls:M.rolls.filter(r=>!r.hid).slice(0,60),cmb:cmbPub(),mus:musPub(),dek:dekPub()});
+  mzSend({t:'state',live:live,scenes:M.scenes.filter(s=>s.id===live).map(s=>({id:s.id,name:s.name,w:s.w,h:s.h,cell:s.cell,grid:s.grid,gcol:s.gcol,wm:s.wm,wmn:s.wmn,wk:s.wk,wy:s.wy,wr:s.wr,lt:s.lt})),tokens:vis.map(t=>Object.assign({},t,{img:'',bimg:''})),rolls:M.rolls.filter(r=>!r.hid).slice(0,60),cmb:cmbPub(),mus:musPub(),dek:dekPub()});
   const s=M.scenes.find(x=>x.id===live);
   if(s&&s.img&&MZ.sentm!==s.id+s.img.length){MZ.sentm=s.id+s.img.length;mzChunks('img',s.id,s.img,150000)}
   vis.forEach(t=>{if(t.img&&MZ.sent[t.id]!==t.img.length){MZ.sent[t.id]=t.img.length;mzChunks('timg',t.id,t.img,150000)}
@@ -2991,25 +2992,28 @@ function mzDraw(){const cv=MZ.cv;if(!cv||!MZ.M||MZ.is3d)return;const w=cv.client
   const im=mzEl(sc.img,'s'+sc.id);x.fillStyle='#111';x.fillRect(0,0,sc.w,sc.h);if(im&&im.complete&&im.naturalWidth)x.drawImage(im,0,0,sc.w,sc.h);
   if(sc.grid){x.strokeStyle=sc.gcol||'#fff';x.globalAlpha=.3;x.lineWidth=1/z;x.beginPath();for(let a=0;a<=sc.w;a+=sc.cell){x.moveTo(a,0);x.lineTo(a,sc.h)}for(let b=0;b<=sc.h;b+=sc.cell){x.moveTo(0,b);x.lineTo(sc.w,b)}x.stroke();x.globalAlpha=1}
   x.strokeStyle='#ffffff55';x.lineWidth=2/z;x.strokeRect(0,0,sc.w,sc.h);
-  const SP=mzSpr(sc);
+  const SP=mzSpr(sc),LN=performance.now(),LS=(sc.lt&&sc.lt.on)?mzLights(sc):[];if(sc.lt&&sc.lt.on)mzLuxOv(x,sc,d,cv,LS,LN);
   MZ.M.tokens.filter(t=>t.sc===sc.id&&(MZ.gm||!t.hid)).forEach(t=>{const q=SP[t.id]||t,d=mzTokDims(t,sc),sel=MZ.sel===t.id;
-    x.save();x.globalAlpha=t.hid?.45:1;
+    x.save();x.globalAlpha=(t.hid?.45:1)*mzLuxTokA(sc,t,q,LS,LN);
     if(d.im){x.shadowColor='rgba(0,0,0,.45)';x.shadowBlur=8/z;if(t.bk&&!mzBImg(t)){x.save();x.translate(q.x,0);x.scale(-1,1);try{x.filter='brightness(.55)'}catch(e){}x.drawImage(d.im,-d.w/2,q.y-d.h/2,d.w,d.h);x.restore()}else x.drawImage(d.im,q.x-d.w/2,q.y-d.h/2,d.w,d.h);x.shadowBlur=0}
     else{x.beginPath();x.arc(q.x,q.y,d.w/2,0,7);x.fillStyle=t.col||'#a347ff';x.fill();x.fillStyle='#fff';x.font='700 '+d.w*.55+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(kIni(t.name),q.x,q.y+d.w*.03)}
     if(sel){x.lineWidth=2/z;x.strokeStyle='#fff';x.setLineDash([7/z,5/z]);x.strokeRect(q.x-d.w/2-3/z,q.y-d.h/2-3/z,d.w+6/z,d.h+6/z);x.setLineDash([])}
     const fs=Math.max(11/z,Math.min(sc.cell*.22,18/z*1.2));x.font='600 '+fs+'px sans-serif';x.textAlign='center';x.textBaseline='top';const nm=t.name||'';x.lineWidth=3/z;x.strokeStyle='rgba(0,0,0,.85)';x.strokeText(nm,q.x,q.y+d.h/2+4/z);x.fillStyle='#fff';x.fillText(nm,q.x,q.y+d.h/2+4/z);x.restore()});
-  x.restore()}
+  if(MZ.gm&&MZ.panel==='lux')mzLuxMarks(x,sc,z);
+  x.restore();mzLuxLoop()}
 const mzW=(e)=>{const r=MZ.cv.getBoundingClientRect();return{sx:e.clientX-r.left,sy:e.clientY-r.top,x:(e.clientX-r.left-MZ.cam.x)/MZ.cam.z,y:(e.clientY-r.top-MZ.cam.y)/MZ.cam.z}};
 function mzHit(p){const sc=mzScene();if(!sc)return null;const L=MZ.M.tokens.filter(t=>t.sc===sc.id&&(MZ.gm||!t.hid));const SP=mzSpr(sc);for(let i=L.length-1;i>=0;i--){const t=L[i],d=mzTokDims(t,sc),q=SP[t.id]||t;if(Math.abs(p.x-q.x)<=d.w/2&&Math.abs(p.y-q.y)<=d.h/2)return t}return null}
 function mzSnap(t,sc){if(!MZ.snap||!sc.grid)return;const c=sc.cell,odd=Math.round(t.sz)%2===1||t.sz<1;t.x=odd?(Math.floor(t.x/c)+.5)*c:Math.round(t.x/c)*c;t.y=odd?(Math.floor(t.y/c)+.5)*c:Math.round(t.y/c)*c}
 function mzBind(){const cv=MZ.cv;
-  cv.addEventListener('pointerdown',e=>{const sc=mzScene();if(!sc)return;cv.setPointerCapture(e.pointerId);const p=mzW(e),t=mzHit(p);
+  cv.addEventListener('pointerdown',e=>{const sc=mzScene();if(!sc)return;cv.setPointerCapture(e.pointerId);const p=mzW(e),lh=MZ.gm&&MZ.panel==='lux'?mzLuxHit(p):null,t=lh?null:mzHit(p);
+    if(lh){mzLuxDown(lh,p);return}
     if(t){MZ.sel=t.id;if(mzCan(t))MZ.drag={k:'tok',id:t.id,dx:((MZ.spr&&MZ.spr[t.id])||t).x-p.x,dy:((MZ.spr&&MZ.spr[t.id])||t).y-p.y,moved:false};else MZ.drag=null;mzAll()}
     else{if(MZ.sel){MZ.sel=null;mzAll()}MZ.drag={k:'pan',sx:e.clientX,sy:e.clientY,cx:MZ.cam.x,cy:MZ.cam.y}}});
   cv.addEventListener('pointermove',e=>{const d=MZ.drag;if(!d)return;
+    if(d.k==='lux'){mzLuxMove(d,mzW(e));return}
     if(d.k==='pan'){MZ.cam.x=d.cx+e.clientX-d.sx;MZ.cam.y=d.cy+e.clientY-d.sy;mzDraw()}
     else{const t=mzTok(d.id),p=mzW(e);if(!t)return;t.x=p.x+d.dx;t.y=p.y+d.dy;d.moved=true;mzDraw();const n=Date.now();if(n-(d.l||0)>70){d.l=n;mzSend({t:'mv',id:t.id,x:t.x,y:t.y,u:mzUid()})}}});
-  const up=()=>{const d=MZ.drag;MZ.drag=null;if(d&&d.k==='tok'&&d.moved){const t=mzTok(d.id),sc=mzScene();if(t&&sc){mzSnap(t,sc);mzSend({t:'mv',id:t.id,x:t.x,y:t.y,u:mzUid()});mzSave();mzDraw()}}};
+  const up=()=>{const d=MZ.drag;MZ.drag=null;if(d&&d.k==='lux'){mzLuxEnd(d);return}if(d&&d.k==='tok'&&d.moved){const t=mzTok(d.id),sc=mzScene();if(t&&sc){mzSnap(t,sc);mzSend({t:'mv',id:t.id,x:t.x,y:t.y,u:mzUid()});mzSave();mzDraw()}}};
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
   cv.addEventListener('wheel',e=>{e.preventDefault();const p=mzW(e),k=Math.exp(-e.deltaY*0.0012),z=Math.max(.05,Math.min(6,MZ.cam.z*k));MZ.cam.x=p.sx-p.x*z;MZ.cam.y=p.sy-p.y*z;MZ.cam.z=z;mzDraw();mzStage()},{passive:false})}
 function mzKey(e){if(!document.getElementById('mz'))return;const tg=e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA')return;
@@ -3076,7 +3080,7 @@ function mzBuild(){mesaClose();if(!document.getElementById('mzcss')){const st=do
   r.addEventListener('click',mzClick);r.addEventListener('change',mzChange);r.addEventListener('input',mzInput);document.addEventListener('keydown',mzKey);window.addEventListener('resize',()=>{mzDraw()});
   new ResizeObserver(()=>mzDraw()).observe(document.getElementById('mzStage'));
   mzNav();mzAll();mzLayout()}
-function mzNav(){const it=[['age','Agentes','☗'],['tok','Tokens','◎'],['pec','Peças 3D','⌂'],['esc','Escudo','▣'],['cen','Cenas','▤'],['cmb','Combate','⚔'],['mus','Música','♪'],['bar','Baralho','🃏'],['rol','Rolagens','⬢']].filter(x=>MZ.gm||x[0]!=='esc'&&x[0]!=='cen'&&x[0]!=='pec'&&(x[0]!=='bar'||DEKV.length>0)),el=document.getElementById('mzNav');
+function mzNav(){const it=[['age','Agentes','☗'],['tok','Tokens','◎'],['lux','Luz','☀'],['pec','Peças 3D','⌂'],['esc','Escudo','▣'],['cen','Cenas','▤'],['cmb','Combate','⚔'],['mus','Música','♪'],['bar','Baralho','🃏'],['rol','Rolagens','⬢']].filter(x=>MZ.gm||x[0]!=='esc'&&x[0]!=='cen'&&x[0]!=='pec'&&x[0]!=='lux'&&(x[0]!=='bar'||DEKV.length>0)),el=document.getElementById('mzNav');
   el.innerHTML='<button class="col" data-z="col" title="Recolher menu">'+(MZ.navc?'›':'‹')+'</button><button class="back" data-z="close">'+(MZ.local?'Voltar':'Voltar ao CRIS').replace('CRIS','Códice')+'</button>'+it.map(x=>'<button class="ni'+(MZ.panel===x[0]?' on':'')+'" data-z="p" data-v="'+x[0]+'"><i>'+x[2]+'</i><span class="lb">'+x[1]+'</span></button>').join('');
   document.getElementById('mz').classList.toggle('nc',MZ.navc)}
 function mzLayout(){const p=document.getElementById('mzPanel');if(!p)return;p.style.display=MZ.panel?'flex':'none';mzNav();mzPanel();setTimeout(()=>{mzDraw()},0)}
@@ -3092,7 +3096,7 @@ function mzResHtml(){const M=MZ.M,mine=M.rolls.map(r=>({who:r.who,label:r.lb||'D
   L=mine.concat(db).sort((a,b)=>b.t-a.t).slice(0,60);
   return '<p style="color:#9a9aa6;font-size:.8rem;margin:10px 0 0">Rolagens das fichas e da mesa, ao vivo.</p><div style="margin:10px 0 8px;flex:1;overflow:auto">'+(L.length?L.map(r=>'<div class="rw">'+esc(r.who||'')+(r.loc?' · só você vê':'')+'</div><div class="rl"><div class="x"><b>'+esc(r.label||'')+(r.formula?' · '+esc(r.formula):'')+'</b><small>'+esc(r.detail||'')+'</small></div><div class="t">'+esc(r.total)+'</div></div><div class="rd">'+new Date(r.t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'</div>').join(''):'<p style="color:#9a9aa6;text-align:center">Nenhuma rolagem ainda.</p>')+'</div>'}
 function mzPanel(){const el=document.getElementById('mzPanel');if(!el)return;el.style.display=MZ.panel?'flex':'none';if(!MZ.panel){document.getElementById('mzModal').innerHTML='';return}
-  const P=MZ.panel,M=MZ.M,sc=mzScene(),T={age:'Agentes',tok:'Tokens',pec:'Peças 3D',esc:'Escudo do Mestre',cen:'Cenas',rol:'Rolagens',cmb:'Combate',mus:'Música',bar:'Baralho'};let h='<h2>'+T[P]+'<span style="display:flex;gap:12px"><button class="pmn" data-z="pmin" aria-label="Minimizar">'+(MZ.pmin?'▴':'▾')+'</button><button data-z="pc" aria-label="Fechar">✕</button></span></h2>';
+  const P=MZ.panel,M=MZ.M,sc=mzScene(),T={age:'Agentes',tok:'Tokens',lux:'Luz',pec:'Peças 3D',esc:'Escudo do Mestre',cen:'Cenas',rol:'Rolagens',cmb:'Combate',mus:'Música',bar:'Baralho'};let h='<h2>'+T[P]+'<span style="display:flex;gap:12px"><button class="pmn" data-z="pmin" aria-label="Minimizar">'+(MZ.pmin?'▴':'▾')+'</button><button data-z="pc" aria-label="Fechar">✕</button></span></h2>';
   if(P==='age'){const q=(MZ.sq||'').toLowerCase(),L=mzAgents().filter(a=>!q||String(a.s.n||'').toLowerCase().includes(q));h+='<input class="q" data-q placeholder="Pesquisar" value="'+esc(MZ.sq||'')+'">'+(L.length?L.map(a=>{const s=a.s||{},hide=s.pr&&!MZ.gm&&a.owner!==mzUid();return '<div class="ag"><div class="im">'+(s.img&&!hide?'<img alt="" src="'+esc(s.img)+'">':esc(kIni(s.n)))+'</div><div class="bd"><b>'+esc(s.n||'Agente')+'</b><span>'+esc(s.sub||s.sn||'')+'</span><div class="row"><button class="bt p sm" data-z="ficha" data-v="'+esc(a.id)+'">Ver Ficha</button>'+(sc?'<button class="bt sm" data-z="focus" data-v="'+esc(a.id)+'">◎ Focar</button>':'')+(MZ.gm&&sc?'<button class="bt sm" data-z="agtok" data-v="'+esc(a.id)+'">No mapa</button>':'')+'</div></div></div>'}).join(''):'<p style="color:#9a9aa6">Nenhum agente. Adicione fichas à campanha (ou crie uma ficha).</p>')}
   else if(P==='tok'){const L=sc?M.tokens.filter(t=>t.sc===sc.id&&(MZ.gm||!t.hid)):[],t=MZ.sel&&mzTok(MZ.sel);
     if(t&&mzCan(t)){h+='<h3>Token selecionado</h3><div class="tr" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px"><label class="fl" style="margin:0">Nome</label><input class="full" data-t="name" value="'+esc(t.name)+'" '+(MZ.gm?'':'disabled')+'><label class="fl" style="margin:0">Tamanho (em quadrados da grade)</label><div class="row">'+mzSizeSel(t.sz,'data-t="sz"')+'<input type="number" step="0.5" min="0.25" max="12" value="'+t.sz+'" data-t="szn" style="width:76px" title="Tamanho personalizado"></div><label class="fl" style="margin:0">Rotação (graus)</label><input type="number" step="15" data-t="rot" value="'+(t.rot||0)+'" style="width:90px"><label class="fl" style="margin:0">Deitar / inclinar a peça (aparece no modo 3D)</label><div class="row" style="flex-wrap:wrap"><button class="bt sm" data-z="tilt" data-v="0|0">Em pé</button><button class="bt sm" data-z="tilt" data-v="-90|0">Deitar de costas</button><button class="bt sm" data-z="tilt" data-v="90|0">Deitar de bruços</button><button class="bt sm" data-z="tilt" data-v="0|90">Tombar ◀</button><button class="bt sm" data-z="tilt" data-v="0|-90">Tombar ▶</button></div><div class="row"><label style="font-size:.8rem">Frente/trás</label><input type="number" step="15" min="-180" max="180" data-t="tx" value="'+(t.tx||0)+'" style="width:76px"><label style="font-size:.8rem">Lado</label><input type="number" step="15" min="-180" max="180" data-t="tz" value="'+(t.tz||0)+'" style="width:76px"></div><label class="fl" style="margin:0">Frente e costas do personagem</label><div class="row" style="flex-wrap:wrap"><label class="bt sm" style="cursor:pointer">Enviar foto de costas<input type="file" accept="image/*" data-file="bimg" hidden></label>'+(mzTImg(t)?'<button class="bt sm" data-z="bgen">Gerar costas automáticas</button>':'')+(t.hb?'<button class="bt d sm" data-z="brm">Tirar costas</button>':'')+'</div><small style="color:#9a9aa6;display:block">'+(t.hb?'A peça tem frente e costas: no 3D o lado mostrado muda conforme o lado de onde a câmera olha (use Rotação para virar a peça).':'Envie a arte do personagem de costas. O gerador automático cria uma segunda camada: espelha a silhueta, troca o rosto por cabelo e apaga os detalhes da frente. É uma aproximação, para costas de verdade envie a arte.')+'</small><button class="bt sm" data-z="tbk">'+(t.bk?'Voltar à frente':'Mostrar as costas')+'</button>'+mzOwnTools(t)+(MZ.gm?'<div class="row"><label style="font-size:.8rem">Cor</label><input type="color" data-t="col" value="'+esc(t.col||'#a347ff')+'"><button class="bt sm" data-z="thid">'+(t.hid?'Mostrar aos jogadores':'Ocultar dos jogadores')+'</button></div><label class="fl" style="margin:0">Controlado por</label><select data-t="own"><option value="">Mestre</option>'+mzMembers().map(m=>'<option value="'+esc(m.id)+'"'+(t.own===m.id?' selected':'')+'>'+esc(m.n)+'</option>').join('')+'</select><label class="fl" style="margin:0">Compartilhar o controle (mover este token)</label><div style="display:grid;gap:4px"><label style="font-size:.85rem;display:flex;gap:6px;align-items:center"><input type="checkbox" data-t="shr" data-u="*"'+((t.shr||[]).indexOf('*')>=0?' checked':'')+'> Todos os jogadores</label>'+mzMembers().filter(m=>m.id!==mzUid()).map(m=>'<label style="font-size:.85rem;display:flex;gap:6px;align-items:center"><input type="checkbox" data-t="shr" data-u="'+esc(m.id)+'"'+((t.shr||[]).indexOf(m.id)>=0?' checked':'')+'> '+esc(m.n)+'</label>').join('')+'</div><label class="fl" style="margin:0">Foco da câmera: jogadores que seguem o mestre neste token</label><div style="display:grid;gap:4px"><label style="font-size:.85rem;display:flex;gap:6px;align-items:center"><input type="checkbox" data-t="fcs" data-u="*"'+((t.fcs||[]).indexOf('*')>=0?' checked':'')+'> Todos os jogadores</label>'+mzMembers().filter(m=>m.id!==mzUid()).map(m=>'<label style="font-size:.85rem;display:flex;gap:6px;align-items:center"><input type="checkbox" data-t="fcs" data-u="'+esc(m.id)+'"'+((t.fcs||[]).indexOf(m.id)>=0?' checked':'')+'> '+esc(m.n)+'</label>').join('')+'</div><div class="row"><button class="bt p sm" data-z="focusall" data-v="'+t.id+'">📍 Focar jogadores</button><button class="bt d sm" data-z="deltok" data-v="'+t.id+'">Remover</button></div>':'')+'</div>'}
@@ -3109,6 +3113,7 @@ function mzPanel(){const el=document.getElementById('mzPanel');if(!el)return;el.
   else if(P==='cen'){const e=MZ.edit&&M.scenes.find(s=>s.id===MZ.edit);
     if(e){h+='<h3>Editar cena</h3><label class="fl" style="margin-top:0">Nome</label><input class="full" data-s="name" value="'+esc(e.name)+'"><label class="fl">Grade</label><div class="row"><label><input type="checkbox" data-s="grid" '+(e.grid?'checked':'')+'> Mostrar grade</label><input type="color" data-s="gcol" value="'+esc(e.gcol||'#ffffff')+'"></div><label class="fl">Tamanho do quadrado (px do mapa): <b>'+e.cell+'</b></label><input class="full" type="range" min="16" max="400" value="'+e.cell+'" data-s="cell">'+mzWorldTools(e)+'<div class="row" style="margin-top:14px"><label class="bt sm" style="cursor:pointer">Trocar imagem<input type="file" accept="image/*" data-file="sceneimg" hidden></label><button class="bt d sm" data-z="delscene" data-v="'+e.id+'">Excluir cena</button><button class="bt p sm" data-z="doneedit">Concluir</button></div>'}
     else{h+='<div style="margin-top:20px"></div>'+M.scenes.map(s=>'<div class="sc'+(MZ.view===s.id?' on':'')+'" style="background-image:url('+(s.thumb||'')+')" data-bg="'+s.id+'"><small>'+(M.live===s.id?'Exibindo para jogadores':'Oculto para jogadores')+'</small><b>'+esc(s.name)+'</b><div class="row"><button class="bt sm" data-z="viewsc" data-v="'+s.id+'">Ver</button>'+(M.live===s.id?'':'<button class="bt sm p" data-z="live" data-v="'+s.id+'">Exibir para jogadores</button>')+'<button class="bt sm" data-z="editsc" data-v="'+s.id+'">Editar</button></div></div>').join('')+(MZ.form&&MZ.form.k==='scene'?'':'<button class="bt p full" data-z="newscene">Criar nova cena</button>')}}
+  else if(P==='lux'){h+=mzLuxHtml()}
   else if(P==='rol'){h+='<div style="margin:20px 0 8px;flex:1;overflow:auto">'+(M.rolls.length?M.rolls.map(r=>'<div class="rw">'+esc(r.who)+'</div><div class="rl"><div class="d">'+skinSvg(r.skin)+'</div><div class="x"><b>'+(r.lb?esc(r.lb)+' · ':'')+esc(r.ex)+'</b><small>'+esc(r.det)+'</small></div><div class="t">'+r.tot+'</div></div><div class="rd">'+new Date(r.t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'</div>').join(''):'<p style="color:#9a9aa6;text-align:center">Nenhuma rolagem ainda.</p>')+'</div><div class="row" style="margin-bottom:8px">'+[4,6,8,10,12,20,100].map(n=>'<button class="bt sm" data-z="qd" data-v="'+n+'">d'+n+'</button>').join('')+'</div><div class="row"><input data-rx class="full" style="flex:1" placeholder="Ex.: 2d20+3" value="'+esc(MZ.rx||'')+'"><button class="bt p" data-z="rollx">Rolar</button></div>'}
   el.innerHTML=h;mzThumbs();{const z=document.getElementById('mz');if(z)z.classList.toggle('pm',!!MZ.pmin)}
   const m=document.getElementById('mzModal');m.innerHTML=MZ.modal?'<div class="modal" data-z="mclose"><div class="in">'+MZ.modal+'<div style="text-align:right;margin-top:14px"><button class="bt" data-z="mclose">Fechar</button></div></div></div>':''}
@@ -3117,6 +3122,7 @@ function mzTokForm(){const f=MZ.form;return '<div class="tr" style="cursor:defau
 
 /* ---- eventos ---- */
 function mzClick(e){const t=e.target.closest('[data-z]');if(!t)return;const a=t.dataset.z,v=t.dataset.v,M=MZ.M,sc=mzScene();
+  if(a.indexOf('lux:')===0){mzLuxClick(a,v);return}
   if(a==='close'){mesaClose();return}
   if(a==='m3'){mz3Toggle();return}
   if(MZ.is3d&&a==='rel'){mz3Rel();return}
@@ -3169,6 +3175,7 @@ function mzClick(e){const t=e.target.closest('[data-z]');if(!t)return;const a=t.
   else if(a==='qd'){mzRoll('1d'+v)}
   else if(a==='rollx'){const i=document.querySelector('#mz [data-rx]');if(i){MZ.rx=i.value;mzRoll(i.value||'1d20')}}}
 function mzChange(e){const t=e.target,M=MZ.M;
+  if(t.dataset.lx){mzLuxSet(t,false);return}
   if(t.dataset.sl){const x=(M.slib||[]).find(q=>q.id===t.dataset.sl);if(x){x.sz=Math.max(.5,Math.min(12,+t.value||3));mzSave()}return}
   if(t.dataset.file){const k=t.dataset.file,f=t.files&&t.files[0];if(!f)return;
     if(k==='scene')mzReadFull(f,1600,(u0)=>mzCropModal(u0,{title:'Recortar o mapa',def:'full',skip:1,max:1600},(u,w,h)=>{MZ.form=MZ.form||{k:'scene'};MZ.form.img=u;MZ.form.crop=null;MZ.form.w=w;MZ.form.h=h;if(!MZ.form.name)MZ.form.name=f.name.replace(/\.[^.]+$/,'');mzStage()}),1);
@@ -3187,6 +3194,7 @@ function mzChange(e){const t=e.target,M=MZ.M;
   if(t.dataset.s){const s=M.scenes.find(x=>x.id===MZ.edit);if(!s)return;const k=t.dataset.s;if(k==='name')s.name=t.value;else if(k==='grid')s.grid=t.checked;else if(k==='gcol')s.gcol=t.value;else if(k==='cell')s.cell=+t.value;else if(k==='wk')s.wk=Math.max(.2,Math.min(3,+t.value||1));else if(k==='wy')s.wy=Math.max(-5,Math.min(5,+t.value||0));else if(k==='wr')s.wr=((+t.value||0)%360+360)%360;mzCommit(false);return}
   if(t.dataset.q!==undefined){MZ.sq=t.value;mzPanel();const q=document.querySelector('#mz [data-q]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}}
 function mzInput(e){const t=e.target;
+  if(t.dataset.lx){if(t.type!=='checkbox'&&t.tagName!=='SELECT')mzLuxSet(t,true);return}
   if(t.dataset.f==='name'&&MZ.form){MZ.form.name=t.value}
   else if(t.dataset.s==='cell'){const s=MZ.M.scenes.find(x=>x.id===MZ.edit);if(s){s.cell=+t.value;mzDraw();const b=t.previousElementSibling;if(b&&b.tagName==='LABEL'){const bb=b.querySelector('b');if(bb)bb.textContent=s.cell}}}
   else if(t.dataset.q!==undefined){MZ.sq=t.value;clearTimeout(MZ.tm.q);MZ.tm.q=setTimeout(()=>{mzPanel();const q=document.querySelector('#mz [data-q]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}},180)}
@@ -3194,6 +3202,108 @@ function mzInput(e){const t=e.target;
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.dataset&&e.target.dataset.rx!==undefined){const b=document.querySelector('#mz [data-z="rollx"]');if(b)b.click()}});
 
 
+
+/* ================= LUZ DA MESA (iluminação 2D e 3D) ================= */
+const MZ_LUX={tocha:{n:'Tocha',r:6,c:'#ff9a3c',i:90,fl:1,w:360},vela:{n:'Vela',r:2.5,c:'#ffc36b',i:75,fl:1,w:360},fogueira:{n:'Fogueira',r:8,c:'#ff7a1a',i:95,fl:1,w:360},lampiao:{n:'Lampião',r:7,c:'#ffe2a8',i:90,fl:0,w:360},luar:{n:'Luar',r:14,c:'#9db8ff',i:55,fl:0,w:360},magica:{n:'Luz mágica',r:6,c:'#b07bff',i:85,fl:0,w:360},holofote:{n:'Holofote',r:12,c:'#ffffff',i:95,fl:0,w:50,a:180}};
+const mzLt=sc=>sc.lt||(sc.lt={on:0,dk:0,tn:'#05070f',pts:[]});
+function mzHexRgb(h){const m=/^#?([0-9a-f]{6})$/i.exec(String(h||''));const n=m?parseInt(m[1],16):0;return[n>>16&255,n>>8&255,n&255]}
+const mzRgba=(h,a)=>{const c=mzHexRgb(h);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'};
+const mzLuxDim=()=>MZ.gm&&!MZ.ltPrev?.55:1;
+function mzFlick(l,now){if(!l.fl)return{r:1,i:1};let s=0;const id=String(l.id);for(let k=0;k<id.length;k++)s+=id.charCodeAt(k);return{r:1+.045*Math.sin(now/120+s)+.03*Math.sin(now/53+s*2.3)+.02*Math.sin(now/29+s*.7),i:.93+.05*Math.sin(now/97+s*1.7)+.03*Math.sin(now/41+s)}}
+function mzLights(sc){const lt=sc&&sc.lt,o=[];if(!lt||!lt.on)return o;const cell=sc.cell;
+  (lt.pts||[]).forEach(p=>o.push({id:p.id,x:p.x,y:p.y,r:p.r*cell,c:p.c,i:p.i/100,w:p.w||360,a:p.a||0,fl:p.fl,cell:cell}));
+  const SP=MZ.spr||{};MZ.M.tokens.forEach(t=>{if(t.sc!==sc.id||!t.lt||(t.hid&&!MZ.gm))return;const q=SP[t.id]||t,L=t.lt;o.push({id:t.id,x:q.x,y:q.y,r:L.r*cell,c:L.c,i:L.i/100,w:L.w||360,a:L.a||0,fl:L.fl,cell:cell,tk:1})});return o}
+function mzLuxAt(Ls,x,y,now){let m=0;for(const l of Ls){const f=mzFlick(l,now),R=l.r*f.r,dx=x-l.x,dy=y-l.y,d=Math.hypot(dx,dy);if(d>=R)continue;let v=Math.min(1,(1-d/R)*1.7)*Math.min(1,l.i*f.i);
+  if(l.w<360){const near=Math.min(R*.22,l.cell*1.1);if(d>near){const an=Math.atan2(dx,-dy)*180/Math.PI,df=Math.abs(((an-l.a)%360+540)%360-180),hw=l.w/2;v*=df<=hw?1:Math.max(0,1-(df-hw)/12)}}
+  if(v>m)m=v}return m}
+function mzLuxTokA(sc,t,q,Ls,now){const lt=sc.lt;if(!lt||!lt.on||!lt.dk)return 1;const dk=Math.min(.97,lt.dk/100*.96)*mzLuxDim();let fl=1-dk;if(MZ.gm&&!MZ.ltPrev)fl=Math.max(fl,.8);if(t.lt||mzOwns(t,mzUid()))fl=Math.max(fl,.75);return Math.min(1,fl+(1-fl)*Math.min(1,mzLuxAt(Ls,q.x,q.y,now)*1.2))}
+function mzLuxPath(c,l,R,ws){c.beginPath();if(l.w>=360){c.arc(l.x,l.y,R,0,7)}else{const a=(l.a-90)*Math.PI/180,hw=l.w*ws/2*Math.PI/180;c.moveTo(l.x,l.y);c.arc(l.x,l.y,R,a-hw,a+hw);c.closePath()}}
+function mzLuxGrad(c,l,R,I,rgb){const g=c.createRadialGradient(l.x,l.y,0,l.x,l.y,R),f=rgb?(a=>mzRgba(l.c,a)):(a=>'rgba(0,0,0,'+a+')');g.addColorStop(0,f(I));g.addColorStop(.4,f(I*.88));g.addColorStop(.75,f(I*.4));g.addColorStop(1,f(0));return g}
+function mzLuxCut(o,l,now){const f=mzFlick(l,now),R=l.r*f.r,I=Math.min(1,l.i*f.i);o.fillStyle=mzLuxGrad(o,l,R,I,0);
+  if(l.w>=360){mzLuxPath(o,l,R,1);o.fill()}
+  else{[[1,.55],[.78,.5],[.56,.5]].forEach(s=>{o.globalAlpha=s[1];mzLuxPath(o,l,R,s[0]);o.fill()});o.globalAlpha=1;
+    const r2=Math.min(R*.22,l.cell*1.1),h={x:l.x,y:l.y,w:360,a:0};o.fillStyle=mzLuxGrad(o,h,r2*1.6,I*.85,0);mzLuxPath(o,h,r2*1.6,1);o.fill()}}
+function mzLuxWash(x,l,now){const f=mzFlick(l,now),R=l.r*f.r,I=Math.min(1,l.i*f.i)*.3;x.fillStyle=mzLuxGrad(x,l,R,I,1);if(l.w>=360){mzLuxPath(x,l,R,1);x.fill()}else{[[1,.6],[.7,.6]].forEach(s=>{x.globalAlpha=s[1];mzLuxPath(x,l,R,s[0]);x.fill()});x.globalAlpha=1}}
+function mzLuxOv(x,sc,d,cv,Ls,now){const lt=sc.lt,A=Math.min(.97,lt.dk/100*.96)*mzLuxDim();if(A<=.004&&!Ls.length)return;
+  let oc=MZ.ltc;if(!oc)oc=MZ.ltc=document.createElement('canvas');if(oc.width!==cv.width||oc.height!==cv.height){oc.width=cv.width;oc.height=cv.height}
+  const o=oc.getContext('2d'),z=MZ.cam.z;o.setTransform(1,0,0,1,0,0);o.globalCompositeOperation='source-over';o.clearRect(0,0,oc.width,oc.height);
+  o.setTransform(d,0,0,d,0,0);o.translate(MZ.cam.x,MZ.cam.y);o.scale(z,z);
+  if(A>.004){o.fillStyle=mzRgba(lt.tn,A);o.fillRect(0,0,sc.w,sc.h);o.globalCompositeOperation='destination-out';Ls.forEach(l=>mzLuxCut(o,l,now));o.globalCompositeOperation='source-over'}
+  x.save();x.setTransform(1,0,0,1,0,0);x.drawImage(oc,0,0);x.restore();
+  if(Ls.length){x.save();x.beginPath();x.rect(0,0,sc.w,sc.h);x.clip();x.globalCompositeOperation='lighter';Ls.forEach(l=>mzLuxWash(x,l,now));x.restore()}}
+function mzLuxHandle(o,cell){const h=Math.max(o.r*cell*.55,cell*.9),a=(o.a||0)*Math.PI/180;return{x:o.x+Math.sin(a)*h,y:o.y-Math.cos(a)*h}}
+function mzLuxSelTok(){const t=MZ.sel&&mzTok(MZ.sel);return t&&t.lt?t:null}
+function mzLuxMarks(x,sc,z){const lt=sc.lt;if(!lt)return;const cell=sc.cell,mk=(px,py,r,c,sel,cone,a,bulb)=>{x.save();x.lineWidth=(sel?2.2:1.2)/z;x.strokeStyle=mzRgba(c,sel?.95:.5);x.setLineDash([7/z,6/z]);
+      if(cone){const aa=(a.a-90)*Math.PI/180,hw=a.w/2*Math.PI/180;x.beginPath();x.moveTo(px,py);x.arc(px,py,r,aa-hw,aa+hw);x.closePath();x.stroke()}else{x.beginPath();x.arc(px,py,r,0,7);x.stroke()}x.setLineDash([]);
+      if(bulb){x.beginPath();x.arc(px,py,13/z,0,7);x.fillStyle='rgba(20,20,26,.88)';x.fill();x.lineWidth=2/z;x.strokeStyle=sel?'#fff':mzRgba(c,1);x.stroke();x.font=(15/z)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText('💡',px,py+1/z)}
+      if(cone&&sel){const hd=mzLuxHandle({x:px,y:py,r:r/cell,a:a.a},cell);x.beginPath();x.moveTo(px,py);x.lineTo(hd.x,hd.y);x.strokeStyle='rgba(255,255,255,.7)';x.lineWidth=1.5/z;x.stroke();x.beginPath();x.arc(hd.x,hd.y,8/z,0,7);x.fillStyle=mzRgba(c,1);x.fill();x.lineWidth=2/z;x.strokeStyle='#fff';x.stroke()}x.restore()};
+  (lt.pts||[]).forEach(p=>mk(p.x,p.y,p.r*cell,p.c,p.id===MZ.lsel,p.w<360,p,1));
+  const t=mzLuxSelTok();if(t){const q=(MZ.spr&&MZ.spr[t.id])||t;mk(q.x,q.y,t.lt.r*cell,t.lt.c,1,t.lt.w<360,t.lt,0)}}
+function mzLuxHit(p){const sc=mzScene();if(!sc||!sc.lt)return null;const z=MZ.cam.z,tol=15/z,cell=sc.cell,near=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)<=tol;
+  const ps=sc.lt.pts||[],sp=ps.find(q=>q.id===MZ.lsel);if(sp&&sp.w<360&&near(p,mzLuxHandle(sp,cell)))return{k:'ph',id:sp.id};
+  const t=mzLuxSelTok();if(t&&t.lt.w<360){const q=(MZ.spr&&MZ.spr[t.id])||t;if(near(p,mzLuxHandle({x:q.x,y:q.y,r:t.lt.r,a:t.lt.a},cell)))return{k:'th',id:t.id}}
+  for(let i=ps.length-1;i>=0;i--)if(near(p,ps[i]))return{k:'pt',id:ps[i].id};return null}
+function mzLuxDown(h,p){const sc=mzScene(),lt=mzLt(sc);if(h.k==='pt'){const o=lt.pts.find(q=>q.id===h.id);MZ.lsel=h.id;MZ.drag={k:'lux',h:'pt',id:h.id,dx:o.x-p.x,dy:o.y-p.y}}else MZ.drag={k:'lux',h:h.k,id:h.id};mzAll()}
+function mzLuxMove(d,p){const sc=mzScene();if(!sc)return;const lt=mzLt(sc);
+  if(d.h==='pt'){const o=lt.pts.find(q=>q.id===d.id);if(!o)return;o.x=Math.max(0,Math.min(sc.w,p.x+d.dx));o.y=Math.max(0,Math.min(sc.h,p.y+d.dy))}
+  else{let o,ox,oy;if(d.h==='ph'){o=lt.pts.find(q=>q.id===d.id);if(!o)return;ox=o.x;oy=o.y}else{const tk=mzTok(d.id);if(!tk||!tk.lt)return;o=tk.lt;const q=(MZ.spr&&MZ.spr[tk.id])||tk;ox=q.x;oy=q.y}
+    o.a=(Math.round(Math.atan2(p.x-ox,-(p.y-oy))*180/Math.PI/5)*5+360)%360}
+  mzDraw();const n=Date.now();if(n-(d.l||0)>140){d.l=n;mzPub(false)}}
+function mzLuxEnd(d){mzSave();clearTimeout(MZ.tm.p);mzPub(false);mzPanel()}
+function mzLuxLoop(){const sc=mzScene();if(MZ.lxr||!sc||MZ.is3d||!MZ.cv||!document.body.contains(MZ.cv))return;if(sc.lt&&sc.lt.on&&mzLights(sc).some(l=>l.fl))MZ.lxr=setTimeout(()=>{MZ.lxr=0;mzDraw()},60)}
+function mzLuxAdd(key){const sc=mzScene();if(!sc)return;const lt=mzLt(sc),cv=MZ.cv,pr=MZ_LUX[key]||MZ_LUX.tocha,cx=((cv.clientWidth/2)-MZ.cam.x)/MZ.cam.z,cy=((cv.clientHeight/2)-MZ.cam.y)/MZ.cam.z,n=lt.pts.filter(q=>q.n&&q.n.indexOf(pr.n)===0).length+1;
+  const o=Object.assign({id:mzId(),x:Math.max(0,Math.min(sc.w,cx)),y:Math.max(0,Math.min(sc.h,cy)),a:0,n:pr.n+' '+n},pr);o.n=pr.n+' '+n;lt.pts.push(o);lt.on=1;MZ.lsel=o.id;mzCommit()}
+function mzLuxClick(a,v){const sc=mzScene();if(!sc||!MZ.gm)return;const lt=mzLt(sc),k=a.slice(4);
+  if(k==='dk'){lt.dk=+v||0;lt.on=1;mzCommit()}
+  else if(k==='add')mzLuxAdd(v)
+  else if(k==='sel'){MZ.lsel=v;mzAll()}
+  else if(k==='del'){lt.pts=lt.pts.filter(q=>q.id!==v);if(MZ.lsel===v)MZ.lsel=null;mzCommit()}
+  else if(k==='tk'){MZ.sel=v;mzAll()}
+  else if(k==='off'){lt.pts=[];lt.dk=0;lt.on=0;MZ.lsel=null;mzM_clearTk(sc);mzCommit()}}
+function mzM_clearTk(sc){MZ.M.tokens.forEach(t=>{if(t.sc===sc.id)delete t.lt})}
+function mzLuxSet(t,live){const sc=mzScene();if(!sc||!MZ.gm)return;const k=t.dataset.lx,v=t.type==='checkbox'?(t.checked?1:0):t.value;
+  if(k==='prev'){MZ.ltPrev=!!t.checked;mzDraw();return}
+  const lt=mzLt(sc);
+  if(k==='on')lt.on=v?1:0;
+  else if(k==='dk')lt.dk=Math.max(0,Math.min(100,+v||0));
+  else if(k==='tn')lt.tn=String(v);
+  else if(k.indexOf('tkm:')===0){const tk=mzTok(k.slice(4));if(tk){const old=tk.lt||{};if(v==='n')delete tk.lt;else if(v==='c')tk.lt=Object.assign({r:4,c:'#ffd9a0',i:85,fl:0,a:0},old,{w:360});else tk.lt=Object.assign({r:10,c:'#fff4d6',i:90,fl:0,a:0},old,{w:old.w&&old.w<360?old.w:55});if(v!=='n')lt.on=1}}
+  else{const p=k.split(':'),s=p[0],f=p[1],o=s==='pt'?lt.pts.find(q=>q.id===MZ.lsel):(mzTok(MZ.sel)||{}).lt;if(!o)return;
+    if(f==='r')o.r=Math.max(.5,Math.min(40,+v||1));else if(f==='i')o.i=Math.max(5,Math.min(100,+v||50));else if(f==='c')o.c=String(v);else if(f==='fl')o.fl=v?1:0;
+    else if(f==='w')o.w=Math.max(10,Math.min(170,+v||60));else if(f==='a')o.a=((+v||0)%360+360)%360;else if(f==='n')o.n=String(v).slice(0,30);
+    else if(f==='sh'){if(v==='c')o.w=360;else if(o.w>=360)o.w=60}}
+  if(live){const pv=t.previousElementSibling,b=pv&&pv.querySelector&&pv.querySelector('b');if(b&&t.type==='range')b.textContent=t.value;mzSave();clearTimeout(MZ.tm.p);MZ.tm.p=setTimeout(()=>mzPub(false),150);mzDraw()}
+  else mzCommit()}
+function mzLuxForm(o,scp){const cone=(o.w||360)<360,R=(a,b,c,d,e,f)=>'<label class="fl" style="margin:0">'+a+': <b>'+b+'</b>'+c+'</label><input class="full" type="range" min="'+d+'" max="'+e+'" step="'+f[0]+'" value="'+b+'" data-lx="'+scp+':'+f[1]+'">';
+  return '<div class="tr" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px;margin-top:8px">'+R('Alcance',o.r,' quadrados',1,30,['.5','r'])+R('Intensidade',o.i,'%',10,100,['1','i'])+
+    '<div class="row" style="flex-wrap:wrap;gap:14px"><label>Cor <input type="color" value="'+esc(o.c||'#ffffff')+'" data-lx="'+scp+':c"></label><label><input type="checkbox" data-lx="'+scp+':fl" '+(o.fl?'checked':'')+'> Tremular (fogo)</label></div>'+
+    '<label class="fl" style="margin:0">Formato</label><select data-lx="'+scp+':sh"><option value="c"'+(cone?'':' selected')+'>Circular</option><option value="k"'+(cone?' selected':'')+'>Lanterna (cone)</option></select>'+
+    (cone?R('Abertura do cone',o.w,'°',10,170,['1','w'])+R('Direção',o.a||0,'° (ou arraste a bolinha no mapa)',0,359,['1','a']):'')+'</div>'}
+function mzLuxHtml(){const sc=mzScene(),M=MZ.M;if(!sc)return '<p style="color:#9a9aa6">Abra ou crie uma cena primeiro.</p>';const lt=mzLt(sc),ps=lt.pts,sp=ps.find(q=>q.id===MZ.lsel);
+  let h='<p style="color:#9a9aa6;font-size:.82rem;margin:4px 0 12px">Escureça a cena e acenda luzes. Arraste a lâmpada no mapa para mover. Os jogadores veem a cena exatamente assim.</p>'+
+   '<label class="row" style="gap:8px;margin-bottom:10px"><input type="checkbox" data-lx="on" '+(lt.on?'checked':'')+'> <b>Iluminação ligada</b> nesta cena</label>'+
+   '<label class="fl" style="margin:0">Escuridão do ambiente: <b>'+lt.dk+'</b>%</label><input class="full" type="range" min="0" max="100" value="'+lt.dk+'" data-lx="dk">'+
+   '<div class="row" style="flex-wrap:wrap;margin:8px 0">'+[['Dia',0],['Entardecer',35],['Noite',65],['Breu',92]].map(x=>'<button class="bt sm'+(lt.dk===x[1]?' p':'')+'" data-z="lux:dk" data-v="'+x[1]+'">'+x[0]+'</button>').join('')+'</div>'+
+   '<div class="row" style="flex-wrap:wrap;gap:14px"><label>Cor da escuridão <input type="color" value="'+esc(lt.tn||'#05070f')+'" data-lx="tn"></label><label><input type="checkbox" data-lx="prev" '+(MZ.ltPrev?'checked':'')+'> Ver como os jogadores (sem clarear para o mestre)</label></div>'+
+   '<h3>Pontos de luz</h3><div class="row" style="flex-wrap:wrap">'+Object.keys(MZ_LUX).map(k=>'<button class="bt sm" data-z="lux:add" data-v="'+k+'">+ '+MZ_LUX[k].n+'</button>').join('')+'</div>'+
+   (ps.length?ps.map(q=>'<div class="tr'+(q.id===MZ.lsel?' on':'')+'" data-z="lux:sel" data-v="'+q.id+'"><div class="th" style="border-color:'+esc(q.c)+';background:'+esc(q.c)+'">💡</div><div class="nm">'+esc(q.n||'Luz')+(q.w<360?' <small style="color:#9a9aa6">cone</small>':'')+'</div><button class="bt d sm" data-z="lux:del" data-v="'+q.id+'" title="Apagar">✕</button></div>').join(''):'<p style="color:#9a9aa6;font-style:italic;text-align:center;margin:12px 0">Nenhum ponto de luz. Toque em um modelo acima.</p>')+
+   (sp?'<h3>Editar: '+esc(sp.n||'Luz')+'</h3><input class="full" data-lx="pt:n" value="'+esc(sp.n||'')+'" placeholder="Nome">'+mzLuxForm(sp,'pt'):'');
+  const L=M.tokens.filter(t=>t.sc===sc.id),st=mzLuxSelTok();
+  h+='<h3>Luz nos tokens (lanterna / tocha)</h3>'+(L.length?L.map(t=>{const m=!t.lt?'n':t.lt.w<360?'k':'c';return '<div class="tr'+(MZ.sel===t.id?' on':'')+'" style="cursor:default"><div class="th" data-z="lux:tk" data-v="'+t.id+'" style="cursor:pointer;border-color:'+esc(t.col)+';background:'+esc(t.col)+'">'+(mzTImg(t)?'<img alt="" src="'+esc(mzTImg(t))+'">':esc(kIni(t.name)))+'</div><div class="nm" data-z="lux:tk" data-v="'+t.id+'" style="cursor:pointer">'+esc(t.name)+'</div><select data-lx="tkm:'+t.id+'" style="max-width:118px"><option value="n"'+(m==='n'?' selected':'')+'>Sem luz</option><option value="c"'+(m==='c'?' selected':'')+'>Circular</option><option value="k"'+(m==='k'?' selected':'')+'>Lanterna</option></select></div>'}).join(''):'<p style="color:#9a9aa6;font-style:italic;text-align:center;margin:12px 0">Nenhum token nesta cena.</p>');
+  if(st)h+='<h3>Luz de '+esc(st.name)+'</h3>'+mzLuxForm(st.lt,'tk');else if(MZ.sel&&mzTok(MZ.sel))h+='<p style="color:#9a9aa6;font-size:.8rem">Escolha Circular ou Lanterna na lista acima para configurar a luz deste token.</p>';
+  h+='<button class="bt d full" style="margin-top:18px" data-z="lux:off">Apagar todas as luzes da cena</button>';return h}
+/* 3D: escurece o ambiente e cria luzes de ponto / cone */
+function mz3Lux(){const T=MZ.T,S=mz3.s,sc=mzScene();if(!T||!S)return;const lt=sc&&sc.lt&&sc.lt.on?sc.lt:null,dk=lt?Math.min(.97,lt.dk/100*.96)*mzLuxDim():0,f=1-dk*.93;
+  if(!mz3.hem)mz3.hem=S.children.find(o=>o.isHemisphereLight)||null;
+  if(mz3.hem){if(mz3.hem.userData.i0==null)mz3.hem.userData.i0=mz3.hem.intensity;mz3.hem.intensity=mz3.hem.userData.i0*f}
+  if(mz3.L){if(mz3.L.userData.i0==null)mz3.L.userData.i0=mz3.L.intensity;mz3.L.intensity=mz3.L.userData.i0*f}
+  if(S.background&&S.background.isColor){if(!mz3.bg0)mz3.bg0=S.background.clone();S.background.copy(mz3.bg0).multiplyScalar(f)}
+  const Ls=lt?mzLights(sc).slice(0,document.documentElement.dataset.device==='mobile'?4:8):[],now=performance.now(),P=mz3.lp||(mz3.lp=[]),rm=e=>{S.remove(e.o);if(e.o.target)S.remove(e.o.target)};
+  while(P.length>Ls.length)rm(P.pop());
+  Ls.forEach((l,i)=>{const cone=l.w<360;let e=P[i];if(!e||e.cone!==cone){if(e)rm(e);const o=cone?new T.SpotLight(0xffffff,0,0,.5,.6,1.6):new T.PointLight(0xffffff,0,0,1.6);S.add(o);if(cone)S.add(o.target);e=P[i]={o:o,cone:cone}}
+    const o=e.o,fk=mzFlick(l,now),px=l.x/sc.cell-mz3.W/2,pz=l.y/sc.cell-mz3.H/2,py=mz3H(px,pz)+(l.tk?1.5:1.7),R=l.r/sc.cell*fk.r;
+    o.color.set(l.c);o.position.set(px,py,pz);o.distance=R*1.3;o.intensity=1.3*R*R*l.i*fk.i*(cone?1.6:1);
+    if(cone){const a=l.a*Math.PI/180;o.angle=Math.min(1.45,l.w/2*Math.PI/180);o.target.position.set(px+Math.sin(a)*R*.6,py-1.5,pz-Math.cos(a)*R*.6);o.target.updateMatrixWorld()}})}
 
 /* ================= MESA 3D (three.js embutido) ================= */
 const mz3={on:0,r:null,s:null,cam:null,L:null,ob:{},mix:[],raf:0,pl:null,base:null,grid:null,sig:'',gsig:'',vsc:null,yaw:0,pit:1,dist:18,tx:0,tz:0,W:1,H:1,rc:null,cl:null,rel:2,hm:null,ty:0,free:0,kd:{},kb:0,wm:null,wmGrid:null,wsig:'',wl:0,wmh:false};
@@ -3375,6 +3485,7 @@ function mz3Loop(){if(!mz3.on||!mz3.r)return;mz3.raf=requestAnimationFrame(mz3Lo
     else{const dx=mz3.cam.position.x-o.g.position.x,dz=mz3.cam.position.z-o.g.position.z,ag=Math.atan2(dx,dz);
       if(o.pb&&tk){const a=-(tk.rot||0)*Math.PI/180;let fr=Math.sin(a)*dx+Math.cos(a)*dz>=0;if(tk.bk)fr=!fr;o.pf.visible=fr;o.pb.visible=!fr;o.pb.rotation.y=0;o.bb.rotation.y=ag-a}
       else o.bb.rotation.y=ag}}});
+  try{mz3Lux()}catch(e){}
   mz3.r.render(mz3.s,mz3.cam)}
 function mz3Ndc(e){const cv=document.getElementById('mzCv3'),r=cv.getBoundingClientRect();return new MZ.T.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1)}
 function mz3Pick(e){mz3.rc.setFromCamera(mz3Ndc(e),mz3.cam);const hit=mz3.rc.intersectObjects(Object.values(mz3.ob).map(o=>o.g),true);for(const h of hit){let n=h.object;while(n&&!(n.userData&&n.userData.tid))n=n.parent;if(n){const t=mzTok(n.userData.tid);if(t&&(MZ.gm||!t.hid))return t}}return null}
