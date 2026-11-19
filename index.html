@@ -2258,7 +2258,7 @@ async function d3Ctl(host,w,h,tight){const T=await mz3Lib(),cv=document.createEl
 function d3Clear(C){C.items.forEach(it=>{C.s.remove(it.grp);it.grp.traverse(o=>{if(o.material&&o.material.dispose&&!o.material.map)o.material.dispose()});if(it.halo){C.s.remove(it.halo);it.halo.material.dispose()}if(it.pl){C.s.remove(it.pl)}if(it.sh){C.s.remove(it.sh);it.sh.material.dispose()}});C.items=[];cancelAnimationFrame(C.raf)}
 const D3COL={crit:0x2bff88,fail:0xdc143c},D3HEX={crit:'#2bff88',fail:'#dc143c'};
 function d3Roll(C,dice,onDone){const T=C.T;d3Clear(C);const L=[];dice.slice(0,12).forEach(d=>{if(d.s===100){L.push({s:100,part:'t',v:d.v,g:d.g},{s:100,part:'u',v:d.v,g:d.g})}else L.push(d)});
-  const n=L.length,cols=Math.min(n,n>6?5:n>3?3:n),rows=Math.ceil(n/cols),sp=2.5,col=d3Color(),red=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const n=L.length,cols=Math.min(n,n>6?5:n>3?3:n),rows=Math.ceil(n/cols),sp=2.5,col=d3Color(),red=false;
   const asp=C.w/C.h,ext=Math.max(cols*sp/asp*.62,rows*sp*.9)+1.2,hc=Math.max(6.2,ext/Math.tan(18*Math.PI/180)*.55);C.cam.position.set(0,hc,hc*.36);C.cam.lookAt(0,0,.2);
   const now=performance.now();
   L.forEach((d,i)=>{const o=d3Make(T,d,col),cx=i%cols,cy=Math.floor(i/cols),rc=(i<Math.floor(n/cols)*cols||n%cols===0)?cols:n%cols,ex=(cx-(((cy===rows-1?rc:cols))-1)/2)*sp,ez=(cy-(rows-1)/2)*sp,ax=new T.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();
