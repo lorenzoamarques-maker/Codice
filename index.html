@@ -2941,6 +2941,71 @@ async function mesaOpen(v){
 function mesaClose(){mz3Stop();musStop();const r=document.getElementById('mz');if(r)r.remove();if(MZ.ch&&sb){try{sb.removeChannel(MZ.ch)}catch(e){}}MZ.ch=null;document.removeEventListener('keydown',mzKey);window.removeEventListener('resize',mzDraw)}
 
 /* ---- rede (Supabase Realtime broadcast) ---- */
+/* ================= CHAMADA DE VOZ E TRANSMISSÃO DE TELA (WebRTC, sinalização pelo Supabase Realtime) ================= */
+const CL={on:0,cid:null,ch:null,peers:{},mem:{},mic:null,scr:null,muted:0,open:0,view:null,au:{},lv:{},ac:null,ice:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}]}};
+try{const t=JSON.parse(localStorage.getItem('callTurn')||'null');if(t&&t.urls)CL.ice.iceServers.push(t)}catch(e){}
+const clMe=()=>(sbUser&&sbUser.id)||'';
+const clNm=()=>{const n=String(sbName()||'Jogador');return n.indexOf('@')>0?n.split('@')[0]:n};
+function clCss(){if(document.getElementById('clcss'))return;const s=document.createElement('style');s.id='clcss';s.textContent=`#clb{position:fixed;right:12px;bottom:12px;z-index:99995;width:48px;height:48px;border-radius:50%;border:2px solid #a347ff;background:#1b1b22;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.5);display:none;align-items:center;justify-content:center}#clb.on{background:#1f8f4e;border-color:#2bff88}#clb small{position:absolute;top:-5px;right:-5px;background:#a347ff;color:#fff;border-radius:9px;font-size:.62rem;padding:1px 5px;font-weight:700}
+#clp{position:fixed;right:12px;bottom:68px;z-index:99995;width:min(340px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#17171d;border:1px solid #34343f;border-radius:12px;color:#fff;font:14px Inter,system-ui,sans-serif;padding:12px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:none}#clp h4{margin:0 0 8px;font-size:.95rem}#clp .cr{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;background:#20202a;margin-top:6px}#clp .cr.sp{outline:2px solid #2bff88}#clp .cr b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}#clp .cr input[type=range]{width:64px}#clp button{background:#2c2c38;color:#fff;border:1px solid #444452;border-radius:8px;padding:7px 10px;cursor:pointer;font:inherit;font-size:.85rem}#clp button.p{background:#a347ff;border-color:#a347ff}#clp button.d{background:#8f1f2e;border-color:#c33}#clp .rw{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}#clp small{color:#9a9aa6;display:block;margin-top:8px;line-height:1.35}
+#clv{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:99994;width:min(720px,calc(100vw - 20px));background:#000;border:1px solid #444;border-radius:10px;overflow:hidden;display:none;box-shadow:0 10px 50px rgba(0,0,0,.7)}#clv .tb{display:flex;gap:6px;align-items:center;background:#17171d;color:#fff;padding:6px 8px;font:13px Inter,system-ui,sans-serif;flex-wrap:wrap}#clv .tb span{flex:1}#clv .tb button{background:#2c2c38;color:#fff;border:1px solid #444452;border-radius:7px;padding:4px 9px;cursor:pointer}#clv video{width:100%;max-height:70vh;display:block;background:#000}`;document.head.appendChild(s)}
+function clEnsure(){clCss();let b=document.getElementById('clb');if(!b){b=document.createElement('button');b.id='clb';b.title='Chamada de voz e tela';b.onclick=()=>{CL.open=!CL.open;clRender()};document.body.appendChild(b);const p=document.createElement('div');p.id='clp';document.body.appendChild(p);const v=document.createElement('div');v.id='clv';document.body.appendChild(v);
+  p.addEventListener('click',e=>{const t=e.target.closest('[data-c]');if(!t)return;const a=t.dataset.c;if(a==='join')clJoin();else if(a==='leave')clLeave();else if(a==='mic')clMute();else if(a==='scr')clScreen();else if(a==='see'){CL.view=t.dataset.v;clRender()}});
+  p.addEventListener('input',e=>{const t=e.target;if(t.dataset.vol){const a=CL.au[t.dataset.vol];if(a)a.forEach(x=>x.volume=+t.value)}})}
+ const show=!!(sbUser&&(CL.on||(typeof CAMP!=='undefined'&&CAMP.cur)));b.style.display=show?'flex':'none';if(!show){document.getElementById('clp').style.display='none'}return b}
+function clRender(){const b=clEnsure(),p=document.getElementById('clp'),v=document.getElementById('clv'),ids=Object.keys(CL.mem);
+ b.className=CL.on?'on':'';b.innerHTML=(CL.on?(CL.muted?'🔇':'📞'):'📞')+(CL.on&&ids.length>1?'<small>'+ids.length+'</small>':'');
+ if(!CL.open||!sbUser){p.style.display='none'}else{p.style.display='block';
+  let h='<h4>📞 Chamada da campanha</h4>';
+  if(!CL.on)h+='<div style="color:#9a9aa6;font-size:.84rem">Converse por voz com o mestre e os jogadores e compartilhe sua tela. Cada um entra quando quiser.</div><div class="rw"><button class="p" data-c="join">Entrar na chamada</button></div><small>Na primeira vez o navegador pede permissão para o microfone. Use fones para evitar eco.</small>';
+  else{h+=ids.map(id=>{const m=CL.mem[id]||{},me=id===clMe();return '<div class="cr" data-id="'+id+'"><span>'+(m.mu?'🔇':'🎤')+'</span><b>'+esc(m.name||'Jogador')+(me?' (você)':'')+'</b>'+(m.shr?'<button data-c="see" data-v="'+id+'">🖥 Ver</button>':'')+(!me?'<input type="range" min="0" max="1" step="0.05" value="'+((CL.au[id]&&CL.au[id][0]&&CL.au[id][0].volume)??1)+'" data-vol="'+id+'" title="Volume">':'')+'</div>'}).join('');
+   h+='<div class="rw"><button data-c="mic">'+(CL.muted?'🔇 Ativar microfone':'🎤 Silenciar')+'</button>'+(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia?'<button data-c="scr" class="'+(CL.scr?'d':'')+'">'+(CL.scr?'⏹ Parar tela':'🖥 Compartilhar tela')+'</button>':'')+'<button class="d" data-c="leave">Sair</button></div>';
+   if(!CL.mic)h+='<small>Você entrou só para ouvir (microfone indisponível ou bloqueado).</small>';
+   if(!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))h+='<small>Este aparelho não consegue compartilhar a tela, mas pode assistir às telas dos outros.</small>'}
+  if(!p._k||p._k!==h){p._k=h;const f=document.activeElement;if(!(f&&f.dataset&&f.dataset.vol))p.innerHTML=h}}
+ /* visualizador de telas */
+ const sh=ids.filter(id=>CL.mem[id]&&CL.mem[id].shr&&(id===clMe()?false:CL.shares&&CL.shares[id]));
+ if(!CL.on||!sh.length||CL.view==='x'){v.style.display='none';if(!sh.length)CL.view=null;return}
+ if(!CL.view||sh.indexOf(CL.view)<0)CL.view=sh[0];
+ let vid=v.querySelector('video');if(!vid){v.innerHTML='<div class="tb"><span></span><button data-v="fs">⛶ Tela cheia</button><button data-v="x">✕</button></div><video autoplay playsinline></video>';vid=v.querySelector('video');v.querySelector('.tb').onclick=e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.v==='x'){CL.view='x';v.style.display='none'}else if(t.dataset.v==='fs'){const q=v.querySelector('video');(q.requestFullscreen||q.webkitRequestFullscreen||function(){}).call(q)}else if(t.dataset.id){CL.view=t.dataset.id;clRender()}}}
+ v.style.display='block';const nm=sh.map(id=>'<button data-id="'+id+'"'+(id===CL.view?' style="border-color:#a347ff"':'')+'>'+esc((CL.mem[id]||{}).name||'Jogador')+'</button>').join('');
+ const tb=v.querySelector('.tb span');tb.innerHTML='🖥 Tela de: '+nm;if(vid.srcObject!==CL.shares[CL.view]){vid.srcObject=CL.shares[CL.view];vid.play().catch(()=>{})}}
+async function clJoin(){if(CL.on||!sb||!sbUser||!CAMP.cur)return;CL.on=1;CL.cid=CAMP.cur.id;CL.open=1;
+ try{CL.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}catch(e){CL.mic=null}
+ CL.muted=0;CL.shares={};
+ try{CL.ch=sb.channel('call-'+CL.cid,{config:{broadcast:{self:false},presence:{key:clMe()}}});CL.ch.on('presence',{event:'sync'},clSync).on('broadcast',{event:'sig'},p=>clSig(p.payload)).subscribe(st=>{if(st==='SUBSCRIBED')clTrack()})}catch(e){note('Não consegui entrar na chamada.');clLeave();return}
+ if(CL.mic)clLevel(clMe(),CL.mic);if(!CL.lt)CL.lt=setInterval(clLoop,200);clRender()}
+function clTrack(){if(!CL.ch)return;try{CL.ch.track({name:clNm(),shr:CL.scr?1:0,mu:CL.muted?1:0})}catch(e){}}
+function clSync(){if(!CL.ch||!CL.on)return;const st=CL.ch.presenceState(),old=CL.mem;CL.mem={};Object.keys(st).forEach(id=>{const m=(st[id]&&st[id][0])||{};CL.mem[id]={name:m.name,shr:m.shr,mu:m.mu}});
+ Object.keys(CL.mem).forEach(id=>{if(id!==clMe()&&!CL.peers[id])clPeer(id);if(id!==clMe()&&CL.mem[id].shr&&!(old[id]&&old[id].shr)){CL.view=id}});
+ Object.keys(CL.peers).forEach(id=>{if(!CL.mem[id])clDrop(id)});Object.keys(CL.shares).forEach(id=>{if(!CL.mem[id]||!CL.mem[id].shr)delete CL.shares[id]});clRender()}
+function clTx(to,x){try{CL.ch.send({type:'broadcast',event:'sig',payload:JSON.parse(JSON.stringify(Object.assign({to:to,from:clMe()},x)))})}catch(e){}}
+function clPeer(id){const pc=new RTCPeerConnection(CL.ice),p=CL.peers[id]={pc:pc,polite:clMe()>id,making:0,ign:0,snd:[]};
+ if(CL.mic)CL.mic.getAudioTracks().forEach(t=>pc.addTrack(t,CL.mic));else pc.addTransceiver('audio',{direction:'recvonly'});
+ if(CL.scr)clAddScr(p);
+ pc.onnegotiationneeded=async()=>{try{p.making=1;await pc.setLocalDescription();clTx(id,{d:pc.localDescription})}catch(e){}finally{p.making=0}};
+ pc.onicecandidate=e=>{if(e.candidate)clTx(id,{c:e.candidate})};
+ pc.oniceconnectionstatechange=()=>{if(pc.iceConnectionState==='failed'){try{pc.restartIce()}catch(e){}}};
+ pc.ontrack=e=>{const s=e.streams[0]||new MediaStream([e.track]);
+  if(e.track.kind==='audio'){const k=s.id;let a=document.getElementById('cla'+k);if(!a){a=document.createElement('audio');a.id='cla'+k;a.autoplay=true;document.body.appendChild(a)}a.srcObject=s;a.play().catch(()=>{});(CL.au[id]||(CL.au[id]=[])).indexOf(a)<0&&CL.au[id].push(a);if(!CL.lv[id])clLevel(id,s)}
+  else{CL.shares[id]=s;e.track.onended=()=>{if(CL.shares[id]===s){delete CL.shares[id];clRender()}};clRender()}};
+ return p}
+function clDrop(id){const p=CL.peers[id];if(p){try{p.pc.close()}catch(e){}delete CL.peers[id]}(CL.au[id]||[]).forEach(a=>{a.srcObject=null;a.remove()});delete CL.au[id];delete CL.lv[id];delete CL.shares[id]}
+async function clSig(m){if(!CL.on||!m||m.to!==clMe())return;const id=m.from,p=CL.peers[id]||clPeer(id),pc=p.pc;
+ try{if(m.d){const col=m.d.type==='offer'&&(p.making||pc.signalingState!=='stable');p.ign=!p.polite&&col;if(p.ign)return;await pc.setRemoteDescription(m.d);if(m.d.type==='offer'){await pc.setLocalDescription();clTx(id,{d:pc.localDescription})}}
+  else if(m.c){try{await pc.addIceCandidate(m.c)}catch(e){if(!p.ign)console.warn(e)}}}catch(e){console.warn(e)}}
+function clMute(){if(!CL.mic)return;CL.muted=CL.muted?0:1;CL.mic.getAudioTracks().forEach(t=>t.enabled=!CL.muted);clTrack();clRender()}
+function clAddScr(p){CL.scr.getTracks().forEach(t=>{try{p.snd.push(p.pc.addTrack(t,CL.scr))}catch(e){}})}
+async function clScreen(){if(!CL.on)return;if(CL.scr){clScrStop();return}
+ try{const s=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:15,max:30}},audio:true});CL.scr=s;const vt=s.getVideoTracks()[0];if(vt)vt.onended=clScrStop;Object.keys(CL.peers).forEach(id=>clAddScr(CL.peers[id]));clTrack();clRender()}catch(e){note('Não foi possível compartilhar a tela.')}}
+function clScrStop(){if(!CL.scr)return;const s=CL.scr;CL.scr=null;Object.keys(CL.peers).forEach(id=>{const p=CL.peers[id];p.snd.forEach(x=>{try{p.pc.removeTrack(x)}catch(e){}});p.snd=[]});s.getTracks().forEach(t=>t.stop());clTrack();clRender()}
+function clLevel(id,s){try{if(!s.getAudioTracks().length)return;const A=window.AudioContext||window.webkitAudioContext;CL.ac=CL.ac||new A();const an=CL.ac.createAnalyser();an.fftSize=256;CL.ac.createMediaStreamSource(s).connect(an);CL.lv[id]={an:an,d:new Uint8Array(an.frequencyBinCount)}}catch(e){}}
+function clLoop(){if(!CL.on)return;const p=document.getElementById('clp');if(!p||p.style.display==='none')return;Object.keys(CL.lv).forEach(id=>{const l=CL.lv[id];l.an.getByteFrequencyData(l.d);let a=0;for(let i=0;i<l.d.length;i++)a+=l.d[i];const on=a/l.d.length>14&&!(id===clMe()&&CL.muted),r=p.querySelector('.cr[data-id="'+id+'"]');if(r)r.classList.toggle('sp',on)})}
+function clLeave(){if(CL.scr){CL.scr.getTracks().forEach(t=>t.stop());CL.scr=null}if(CL.mic){CL.mic.getTracks().forEach(t=>t.stop());CL.mic=null}Object.keys(CL.peers).forEach(clDrop);
+ if(CL.ch){try{CL.ch.untrack()}catch(e){}try{sb.removeChannel(CL.ch)}catch(e){}CL.ch=null}clearInterval(CL.lt);CL.lt=0;CL.on=0;CL.mem={};CL.shares={};CL.lv={};CL.view=null;clRender()}
+window.addEventListener('beforeunload',()=>{try{clLeave()}catch(e){}});
+setInterval(()=>{try{if(!document.body)return;const b=clEnsure();const w=!!(sbUser&&(CL.on||CAMP.cur));if(b._w!==w){b._w=w;clRender()}}catch(e){}},1500);
+
 function mzNet(){if(MZ.local||!sb)return;try{MZ.ch=sb.channel('mesa-'+MZ.cid,{config:{broadcast:{self:false}}}).on('broadcast',{event:'m'},p=>mzRecv(p.payload)).subscribe(st=>{if(st==='SUBSCRIBED'&&!MZ.gm)mzSend({t:'hello'})})}catch(e){}}
 window.__mzRedraw=function(){if(!document.getElementById('mzPanel'))return;try{if(MZ.gm&&!MZ.local)mzPub()}catch(e){}if(MZ.panel==='cmb'||MZ.panel==='esc'||MZ.panel==='mus'||MZ.panel==='bar'||MZ.panel==='rol')mzPanel()};
 window.__mzSend=p=>mzSend(p);
