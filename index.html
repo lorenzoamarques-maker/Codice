@@ -2949,7 +2949,7 @@ function mesaClose(){mz3Stop();musStop();const r=document.getElementById('mz');i
 
 /* ---- rede (Supabase Realtime broadcast) ---- */
 /* ================= CHAMADA DE VOZ, CÂMERA E TELA (WebRTC, sinalização pelo Supabase Realtime) ================= */
-const CL={on:0,cid:null,ch:null,peers:{},mem:{},mic:null,cam:null,scr:null,muted:0,open:0,foc:null,vs:{},au:{},lv:{},ac:null,tl:{},ice:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}]}};
+const CL={on:0,cid:null,ch:null,peers:{},mem:{},mic:null,cam:null,scr:null,muted:0,open:0,foc:null,vs:{},au:{},lv:{},ac:null,tl:{},ice:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turns:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
 try{const t=JSON.parse(localStorage.getItem('callTurn')||'null');if(t&&t.urls)CL.ice.iceServers.push(t)}catch(e){}
 const clMe=()=>(sbUser&&sbUser.id)||'';
 const clNm=()=>{const n=String(sbName()||'Jogador');return n.indexOf('@')>0?n.split('@')[0]:n};
@@ -2962,7 +2962,7 @@ function clCss(){if(document.getElementById('clcss'))return;const s=document.cre
 #clw .g.hf .t{width:168px;height:94px}#clw .g.hf .t.f{width:100%;height:calc(100% - 102px)}
 #clw .t video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:none}#clw .t.scr video{object-fit:contain}#clw .t.vv video{display:block}#clw .t.vv .av{display:none}
 #clw .av{width:min(96px,44%);aspect-ratio:1;border-radius:50%;background:rgba(0,0,0,.28) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:clamp(1.1rem,3.4vw,2.4rem);font-weight:700;color:#fff}#clw .g.hf .t:not(.f) .av{width:46px;font-size:1.2rem}
-#clw .lvb{position:absolute;top:8px;right:8px;display:none;gap:6px;z-index:2}#clw .t.scr .lvb{display:flex}#clw .lvb .q{background:rgba(0,0,0,.62);font:700 .7rem Inter,system-ui,sans-serif;padding:3px 7px;border-radius:6px}#clw .lvb .lv{background:#ed4245;font:700 .7rem Inter,system-ui,sans-serif;padding:3px 7px;border-radius:6px}#clw .nm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.62);border-radius:6px;padding:2px 8px;font-size:.78rem;font-weight:600;max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#clw .vl{position:absolute;right:8px;bottom:8px;width:70px;opacity:0;transition:.15s;z-index:2}#clw .t:hover .vl{opacity:1}@media(hover:none){#clw .vl{opacity:1}}
+#clw .lvb{position:absolute;top:8px;right:8px;display:none;gap:6px;z-index:2}#clw .t.scr .lvb{display:flex}#clw .lvb .q{background:rgba(0,0,0,.62);font:700 .7rem Inter,system-ui,sans-serif;padding:3px 7px;border-radius:6px}#clw .lvb .lv{background:#ed4245;font:700 .7rem Inter,system-ui,sans-serif;padding:3px 7px;border-radius:6px}#clw .nm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.62);border-radius:6px;padding:2px 8px;font-size:.78rem;font-weight:600;max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#clw .vl{position:absolute;right:8px;bottom:8px;width:92px;height:22px;margin:0;padding:0 8px;box-sizing:border-box;border:0;border-radius:11px;background:rgba(0,0,0,.6);opacity:0;transition:.15s;z-index:2;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;--p:100%}#clw .vl::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#fff var(--p),rgba(255,255,255,.28) var(--p))}#clw .vl::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;border:0;margin-top:-4px;box-shadow:0 1px 3px rgba(0,0,0,.6)}#clw .vl::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.28)}#clw .vl::-moz-range-progress{height:4px;border-radius:2px;background:#fff}#clw .vl::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}#clw .t:hover .vl{opacity:1}@media(hover:none){#clw .vl{opacity:1}}
 #clw .bar{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;padding:10px;background:#000}#clw .bar button{width:54px;height:44px;border-radius:12px;border:0;background:#2b2d31;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .12s}#clw .bar button:hover{background:#3a3c43}#clw .bar button.on{background:#fff;color:#111}#clw .bar button.d{background:#da373c}#clw .bar button.lv{background:#da373c;width:68px}#clw .bar button.lv:hover{background:#a12828}#clw .bar svg{width:22px;height:22px;fill:currentColor}
 #clw .cta{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;color:#9a9aa6}#clw .cta button{background:#23a55a;color:#fff;border:0;border-radius:9px;padding:10px 18px;cursor:pointer;font:inherit;font-weight:600}
 @media(max-width:760px){#clw{left:4px;right:4px;bottom:64px;width:auto!important;resize:none;height:72vh}}`;document.head.appendChild(s)}
@@ -2970,7 +2970,7 @@ function clEnsure(){clCss();let b=document.getElementById('clb');if(!b){b=docume
   const w=document.createElement('div');w.id='clw';w.innerHTML='<div class="hd"><b>🔊 Chamada da campanha</b><span class="tm"></span><button data-c="fs" title="Tela cheia">⛶</button><button data-c="x" title="Esconder (a chamada continua)">–</button></div><div class="cta"></div><div class="g" style="display:none"></div><div class="bar" style="display:none"></div>';document.body.appendChild(w);
   w.addEventListener('click',e=>{const t=e.target.closest('[data-c]');if(t){const a=t.dataset.c;if(a==='join')clJoin();else if(a==='leave')clLeave();else if(a==='mic')clMute();else if(a==='ns')clNoise();else if(a==='cam')clCamera();else if(a==='scr')clScreen();else if(a==='x'){CL.open=0;clRender()}else if(a==='fs'){if(document.fullscreenElement)document.exitFullscreen();else if(w.requestFullscreen)w.requestFullscreen()}return}
    const tl=e.target.closest('.t');if(tl&&!e.target.closest('.vl')){CL.foc=CL.foc===tl.dataset.k?null:tl.dataset.k;clRender()}});
-  w.addEventListener('input',e=>{const t=e.target;if(t.dataset.vol){const a=CL.au[t.dataset.vol];if(a)a.forEach(x=>x.volume=+t.value)}});
+  w.addEventListener('input',e=>{const t=e.target;if(t.dataset.vol){const a=CL.au[t.dataset.vol];if(a)a.forEach(x=>x.volume=+t.value);t.style.setProperty('--p',(+t.value*100)+'%')}});
   const hd=w.querySelector('.hd');let dr=null;hd.addEventListener('pointerdown',e=>{if(e.target.closest('button')||document.fullscreenElement)return;const r=w.getBoundingClientRect();dr={x:e.clientX-r.left,y:e.clientY-r.top};hd.setPointerCapture(e.pointerId)});
   hd.addEventListener('pointermove',e=>{if(!dr)return;w.style.left=Math.max(0,Math.min(innerWidth-80,e.clientX-dr.x))+'px';w.style.top=Math.max(0,Math.min(innerHeight-40,e.clientY-dr.y))+'px';w.style.right='auto';w.style.bottom='auto'});
   hd.addEventListener('pointerup',()=>{dr=null});try{new ResizeObserver(()=>clFit()).observe(w)}catch(e){}window.addEventListener('resize',clFit)}
@@ -2978,7 +2978,7 @@ function clEnsure(){clCss();let b=document.getElementById('clb');if(!b){b=docume
 function clTile(k){const g=document.querySelector('#clw .g');let t=CL.tl[k];if(!t){t=document.createElement('div');t.className='t';t.dataset.k=k;t.innerHTML='<video autoplay playsinline></video><div class="av"></div><div class="lvb"><span class="q"></span><span class="lv">AO VIVO</span></div><div class="nm"></div>'+(k.slice(-2)==='~s'||k.split('~')[0]===clMe()?'':'<input class="vl" type="range" min="0" max="1" step="0.05" value="1" title="Volume">');if(t.querySelector('.vl'))t.querySelector('.vl').dataset.vol=k.split('~')[0];CL.tl[k]=t;t.style.background=k.slice(-2)==='~s'?'#000':clCol(k.split('~')[0]);g.appendChild(t)}return t}
 function clCol(id){const P=['#784f3a','#c9c2be','#aecce4','#3f1773','#c9a972','#2f5d62','#6b2d3c','#35507a','#5d6b2d','#7a3a6b'];let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return P[h%P.length]}
 function clFit(){const g=document.querySelector('#clw .g');if(!g||g.style.display==='none'||g.classList.contains('hf'))return;const N=g.children.length;if(!N)return;const W=g.clientWidth-16,H=g.clientHeight-16,gp=8;let bw=0,bh=0;for(let c=1;c<=N;c++){const r=Math.ceil(N/c);let w=(W-gp*(c-1))/c,h=w*9/16;if(h*r+gp*(r-1)>H){h=(H-gp*(r-1))/r;w=h*16/9}if(w>bw){bw=w;bh=h}}g.style.setProperty('--tw',Math.max(80,Math.floor(bw))+'px');g.style.setProperty('--th',Math.max(45,Math.floor(bh))+'px')}
-function clVid(t,stream,mute){const v=t.querySelector('video');if(v.srcObject!==stream){v.srcObject=stream||null;if(stream)v.play().catch(()=>{})}v.muted=!!mute;t.classList.toggle('vv',!!stream)}
+function clVid(t,stream,mute){const v=t.querySelector('video');if(v.srcObject!==stream){v.srcObject=stream||null;if(stream)v.play().catch(()=>{})}v.muted=true;v.playsInline=true;if(stream&&v.paused)v.play().catch(()=>{});t.classList.toggle('vv',!!stream)}
 function clRender(){const b=clEnsure(),w=document.getElementById('clw'),ids=Object.keys(CL.mem);
  b.className=CL.on?'on':'';b.innerHTML=(CL.on&&CL.muted?'🔇':'📞')+(CL.on&&ids.length>1?'<small>'+ids.length+'</small>':'');
  if(!CL.open||!sbUser){w.style.display='none';return}w.style.display='flex';
@@ -2987,7 +2987,7 @@ function clRender(){const b=clEnsure(),w=document.getElementById('clw'),ids=Obje
  cta.style.display='none';g.style.display='flex';bar.style.display='flex';
  const keep={},me=clMe();
  ids.forEach(id=>{const m=CL.mem[id]||{},k=id+'~u',t=clTile(k);keep[k]=1;
-  const cs=id===me?CL.cam:(m.cs&&CL.vs[id]&&CL.vs[id][m.cs]);clVid(t,cs||null,id===me);{const av=t.querySelector('.av'),u=/^https:\/\//.test(m.av||'')?m.av:'';av.textContent=u?'':(m.name||'?').trim().charAt(0).toUpperCase();av.style.backgroundImage=u?'url('+JSON.stringify(u)+')':''}t.querySelector('.nm').textContent=(m.mu?'🔇 ':'')+(m.name||'Jogador')+(id===me?' (você)':'');t.classList.remove('scr');
+  const cs=id===me?CL.cam:(m.cs&&CL.vs[id]&&CL.vs[id][m.cs]);clVid(t,cs||null,id===me);{const av=t.querySelector('.av'),u=/^https:\/\//.test(m.av||'')?m.av:'';av.textContent=u?'':(m.name||'?').trim().charAt(0).toUpperCase();av.style.backgroundImage=u?'url('+JSON.stringify(u)+')':''}t.querySelector('.nm').textContent=(m.mu?'🔇 ':'')+(m.name||'Jogador')+(id===me?' (você)':'')+((CL.peers[id]&&/failed|disconnected/.test(CL.peers[id].pc.connectionState))?' ⚠ sem conexão':'');t.classList.remove('scr');
   const ss=id===me?CL.scr:(m.ss&&CL.vs[id]&&CL.vs[id][m.ss]);
   if(ss&&m.ss){const k2=id+'~s',t2=clTile(k2);keep[k2]=1;t2.classList.add('scr');clVid(t2,ss,id===me);t2.querySelector('.nm').textContent='🖥 '+(m.name||'Jogador')+(id===me?' (você)':'');t2.querySelector('.av').textContent='';
    CL.seen[k2]=1}});
@@ -2999,19 +2999,22 @@ function clRender(){const b=clEnsure(),w=document.getElementById('clw'),ids=Obje
 CL.seen={};
 async function clJoin(){if(CL.on||!sb||!sbUser||!CAMP.cur)return;CL.on=1;CL.cid=CAMP.cur.id;CL.open=1;CL.t0=Date.now();
  try{CL.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}})}catch(e){CL.mic=null}
- CL.muted=0;CL.vs={};CL.raw=CL.mic;if(CL.raw){try{CL.mic=clMicOut()}catch(e){CL.mic=CL.raw}}
+ CL.muted=0;CL.vs={};CL.raw=CL.mic;if(CL.raw){try{const A=window.AudioContext||window.webkitAudioContext;CL.ac=CL.ac||new A();await Promise.race([CL.ac.resume(),new Promise(r=>setTimeout(r,700))])}catch(e){}CL.nsOff=0;if(CL.ac&&CL.ac.state!=='running'){CL.mic=CL.raw}else{try{CL.mic=clMicOut()}catch(e){CL.mic=CL.raw}}}
  try{CL.ch=sb.channel('call-'+CL.cid,{config:{broadcast:{self:false},presence:{key:clMe()}}});CL.ch.on('presence',{event:'sync'},clSync).on('broadcast',{event:'sig'},p=>clSig(p.payload)).subscribe(st=>{if(st==='SUBSCRIBED')clTrack()})}catch(e){note('Não consegui entrar na chamada.');clLeave();return}
  if(CL.mic)clLevel(clMe(),CL.mic);if(!CL.lt)CL.lt=setInterval(clLoop,200);clRender()}
 CL.ns=localStorage.getItem('callNS')!=='0';
 function clNsBuild(raw){const A=window.AudioContext||window.webkitAudioContext;CL.ac=CL.ac||new A();const ac=CL.ac;try{ac.resume()}catch(e){}
  const src=ac.createMediaStreamSource(raw),hp=ac.createBiquadFilter(),lp=ac.createBiquadFilter(),an=ac.createAnalyser(),g=ac.createGain(),cp=ac.createDynamicsCompressor(),dst=ac.createMediaStreamDestination();
- hp.type='highpass';hp.frequency.value=110;lp.type='lowpass';lp.frequency.value=7800;an.fftSize=512;g.gain.value=0;
+ hp.type='highpass';hp.frequency.value=110;lp.type='lowpass';lp.frequency.value=7800;an.fftSize=512;g.gain.value=1;
  src.connect(hp);hp.connect(lp);lp.connect(an);lp.connect(g);g.connect(cp);cp.connect(dst);
- const d=new Uint8Array(an.fftSize);let open=0,hold=0,nf=.01;
+ const d=new Uint8Array(an.fftSize);let open=1,hold=performance.now()+2500,nf=.01;setTimeout(()=>{if(ac.state!=='running')clNsFallback()},1500);
  const iv=setInterval(()=>{an.getByteTimeDomainData(d);let m=0;for(let i=0;i<d.length;i++){const v=(d[i]-128)/128;m+=v*v}const r=Math.sqrt(m/d.length),now=performance.now(),thr=Math.max(.012,nf*2.6);
   if(r>thr){open=1;hold=now+280}else{if(now>hold)open=0;nf=nf*.97+Math.min(r,.05)*.03}
   g.gain.setTargetAtTime(open?1:0,ac.currentTime,open?.012:.09)},20);
  return{stream:dst.stream,stop(){clearInterval(iv);try{src.disconnect()}catch(e){}}}}
+function clNsFallback(){if(!CL.raw||!CL.nsb)return;try{CL.nsb.stop()}catch(e){}CL.nsb=null;CL.nsOff=1;CL.mic=CL.raw;const nt=CL.raw.getAudioTracks()[0];CL.raw.getAudioTracks().forEach(t=>t.enabled=!CL.muted);Object.keys(CL.peers).forEach(id=>{const p=CL.peers[id];if(p.ma&&nt){try{p.ma.replaceTrack(nt)}catch(e){}}});note('O supressor de ruído não pôde iniciar neste navegador; usando o microfone direto.');clRender()}
+function clKick(){try{if(CL.ac&&CL.ac.state==='suspended')CL.ac.resume()}catch(e){}document.querySelectorAll('audio[id^=cla]').forEach(a=>{if(a.paused)a.play().catch(()=>{})});document.querySelectorAll('#clw video').forEach(v=>{if(v.srcObject&&v.paused)v.play().catch(()=>{})})}
+document.addEventListener('click',clKick,true);document.addEventListener('touchend',clKick,true);
 function clMicOut(){if(CL.nsb){CL.nsb.stop();CL.nsb=null}if(CL.ns){CL.nsb=clNsBuild(CL.raw);return CL.nsb.stream}return CL.raw}
 function clNoise(){CL.ns=!CL.ns;try{localStorage.setItem('callNS',CL.ns?'1':'0')}catch(e){}if(!CL.on||!CL.raw){clRender();return}
  let out;try{out=clMicOut()}catch(e){out=CL.raw}CL.mic=out;out.getAudioTracks().forEach(t=>t.enabled=!CL.muted);const nt=out.getAudioTracks()[0];
@@ -3025,10 +3028,10 @@ function clPeer(id){const pc=new RTCPeerConnection(CL.ice),p=CL.peers[id]={pc:pc
  if(CL.mic)CL.mic.getAudioTracks().forEach(t=>{p.ma=pc.addTrack(t,CL.mic)});else pc.addTransceiver('audio',{direction:'recvonly'});
  if(CL.cam)clAdd(p,CL.cam,'sc');if(CL.scr)clAdd(p,CL.scr,'ss');
  pc.onnegotiationneeded=async()=>{try{p.making=1;await pc.setLocalDescription();clTx(id,{d:pc.localDescription})}catch(e){}finally{p.making=0}};
- pc.onicecandidate=e=>{if(e.candidate)clTx(id,{c:e.candidate})};
+ pc.onicecandidate=e=>{if(e.candidate)clTx(id,{c:e.candidate})};pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'){try{pc.restartIce()}catch(e){}}clRender()};
  pc.oniceconnectionstatechange=()=>{if(pc.iceConnectionState==='failed'){try{pc.restartIce()}catch(e){}}};
  pc.ontrack=e=>{const s=e.streams[0]||new MediaStream([e.track]);
-  if(e.track.kind==='audio'){const k=s.id;let a=document.getElementById('cla'+k);if(!a){a=document.createElement('audio');a.id='cla'+k;a.autoplay=true;document.body.appendChild(a)}a.srcObject=s;a.play().catch(()=>{});(CL.au[id]||(CL.au[id]=[])).indexOf(a)<0&&CL.au[id].push(a);if(!CL.lv[id])clLevel(id,s)}
+  if(e.track.kind==='audio'){const k=s.id;let a=document.getElementById('cla'+k);if(!a){a=document.createElement('audio');a.id='cla'+k;a.autoplay=true;document.body.appendChild(a)}a.srcObject=s;a.play().catch(()=>{note('Clique em qualquer lugar da tela para ativar o som da chamada.')});(CL.au[id]||(CL.au[id]=[])).indexOf(a)<0&&CL.au[id].push(a);if(!CL.lv[id])clLevel(id,s)}
   else{(CL.vs[id]||(CL.vs[id]={}))[s.id]=s;e.track.onended=()=>{if(CL.vs[id]&&CL.vs[id][s.id]===s){delete CL.vs[id][s.id];clRender()}};clRender()}};
  return p}
 function clDrop(id){const p=CL.peers[id];if(p){try{p.pc.close()}catch(e){}delete CL.peers[id]}(CL.au[id]||[]).forEach(a=>{a.srcObject=null;a.remove()});delete CL.au[id];delete CL.lv[id];delete CL.vs[id]}
