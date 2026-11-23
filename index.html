@@ -1470,6 +1470,8 @@ function openHome(manual){remPurge();state.ui.homeManual=!!manual;let el=documen
 function hHero(){const s=HSL[HI];return '<div class="hs" style="background:'+s[2]+'"><button class="hz l" data-h="prev" aria-label="Anterior">‹</button><div class="ht"><small>CÓDICE DE MESA</small><h2>'+esc(s[0])+'</h2><p>'+esc(s[1])+'</p></div><button class="hz r" data-h="next" aria-label="Próximo">›</button></div><div class="hd">'+HSL.map((x,i)=>'<button class="'+(i===HI?'on':'')+'" data-h="slide" data-v="'+i+'" aria-label="Slide '+(i+1)+'"></button>').join('')+'</div>'}
 /* ---------- campanhas (Supabase) ---------- */
 const CKIND={op:'Ordem Paranormal',dnd:'D&D 5e'};
+// Campanhas podem usar qualquer sistema disponível (nativo ou personalizado).
+allSys().forEach(s=>{CKIND[s.id]=s.name});
 let CAMP={view:'list',list:[],cur:null,tab:'agentes',stab:'agentes',mem:[],chars:[],prof:{},modal:null,form:null,rolls:[],err:'',loaded:false,loading:false},CCH=null;
 const kDate=s=>{const d=new Date(s);return isNaN(d)?'':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(2)};
 const kIni=n=>String(n||'?').trim().charAt(0).toUpperCase()||'?';
@@ -1959,7 +1961,7 @@ function kList(){const L=CAMP.list;return '<div style="display:flex;justify-cont
 function kForm(){const f=CAMP.form,ed=!!f.id;
  const seg=(k,o)=>'<div class="kseg">'+o.map(x=>'<button type="button" data-h="kseg" data-v="'+k+':'+x[0]+'"'+(String(f[k])===x[0]?' class="on"':'')+(k==='kind'&&ed?' disabled':'')+'>'+x[1]+'</button>').join('')+'</div>';
  return '<h1>'+(ed?'Editar Campanha':'Criar Campanha')+'</h1><div class="kform"><label for="kfn" style="margin-top:0">Nome*</label><input id="kfn" maxlength="80" value="'+esc(f.name)+'" style="width:100%;max-width:420px">'+
- '<label>Tipo de campanha</label>'+seg('kind',[['op','ORDEM PARANORMAL'],['dnd','D&amp;D 5E']])+(ed?'<div class="muted" style="font-size:.8rem;margin-top:4px">O tipo não pode ser alterado depois de criada.</div>':'')+
+ '<label>Tipo de campanha</label>'+seg('kind',allSys().map(s=>[s.id,esc(s.name)]))+(ed?'<div class="muted" style="font-size:.8rem;margin-top:4px">O tipo não pode ser alterado depois de criada.</div>':'')+
  '<label>Escudo do Mestre Privado</label><div class="muted" style="font-size:.8rem;margin:-2px 0 6px">Obs: essa opção pode ser editada após a criação da campanha</div>'+seg('shield',[['0','DESLIGADO'],['1','LIGADO']])+
  '<label>Imagem da campanha</label>'+(f.img?'<img src="'+esc(f.img)+'" alt="" style="display:block;max-width:100%;max-height:180px;border-radius:6px;margin-bottom:8px">':'')+'<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="kb" style="cursor:pointer">🖼 '+(f.img?'Trocar':'Escolher')+' imagem<input type="file" accept="image/*" hidden onchange="kImg(this)"></label>'+(f.img?kBtn('kimgx','Remover','bad'):'')+'</div>'+
  '<label>Descrição</label><div class="krte"><div class="ktb">'+[['bold','<b>B</b>'],['italic','<i>I</i>'],['underline','<u>U</u>']].map(x=>'<button type="button" onmousedown="event.preventDefault()" data-h="kfmt" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><div id="kfd" contenteditable="true">'+cleanHtml(f.desc)+'</div></div>'+
