@@ -215,6 +215,13 @@ var im=new Image();im.onload=ok;im.onerror=function(){try{var d=H.querySelector(
 })();
 </script>
 
+<style id="dice-glow-restored">
+/* Dados 2D: aparência original */
+#dice .dgrid .die{background:linear-gradient(145deg,var(--dk1,var(--bg3)),var(--dk2,var(--bg3)));color:var(--dki,inherit);border-color:var(--dke,var(--line));border-radius:var(--r,8px);box-shadow:none;text-shadow:0 1px 2px rgba(0,0,0,.25);transform:none;filter:none;transition:filter .15s,border-color .15s,transform .15s}
+#dice .dgrid .die:before,#dice .dgrid .die:after{content:none!important;display:none!important}
+#dice .dgrid .die:hover{background:linear-gradient(145deg,var(--dk1,var(--bg3)),var(--dk2,var(--bg3)));color:var(--dki,var(--accent));border-color:var(--dke,var(--accent));box-shadow:0 0 12px var(--dk1,transparent);filter:brightness(1.12);transform:translateY(-1px)}
+#dice .dgrid .die:active{transform:scale(.98);box-shadow:none}
+</style>
 </head>
 <body>
 <div id="boot" style="position:fixed;inset:0;z-index:2147483000;background:#111;color:#eee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:600 15px -apple-system,BlinkMacSystemFont,Roboto,sans-serif;text-align:center;padding:24px"><div style="width:38px;height:38px;border:4px solid #333;border-top-color:#a347ff;border-radius:50%;animation:bootspin 1s linear infinite"></div><div>Carregando o Códice de Mesa…</div><div id="bootm" style="font-weight:400;font-size:13px;opacity:.75;max-width:320px;line-height:1.45">Na primeira vez pode levar alguns segundos.</div></div><style>@keyframes bootspin{to{transform:rotate(360deg)}}</style><script>(function(){var m=function(t){var e=document.getElementById('bootm');if(e)e.innerHTML=t};setTimeout(function(){m('Está demorando… Se você abriu pelo Discord, toque no menu (⋮ ou ⋯) e escolha “Abrir no navegador”.')},12000);window.addEventListener('error',function(e){window.__bootErr=e.message||'erro';if(document.getElementById('boot'))m('Não consegui iniciar: '+(e.message||'erro')+'<br><button onclick="location.reload()" style="margin-top:10px;padding:10px 16px;border:0;border-radius:6px;background:#a347ff;color:#fff;font-weight:700">Recarregar</button>')})})();</script>
@@ -2343,15 +2350,18 @@ function d3Plan(T,s,mode,val){const I=d3Info(T,s),base=(mode==='n'&&s!==100)?1:0
   return{I,lab,fi,txt:l=>I.std?d3Shown(s,mode,l):(l===null?'':String(l))}}
 function d3Target(T,face){const up=new T.Vector3(0,1,0),q1=new T.Quaternion().setFromUnitVectors(face.n,up),u2=face.u.clone().applyQuaternion(q1),a=Math.atan2(u2.x,u2.z),q2=new T.Quaternion().setFromAxisAngle(up,Math.PI-a);return q2.multiply(q1)}
 const D3T={};
-function d3Tex(T,txt,sz,col){const k=txt+'|'+sz+'|'+(col||'skin');if(D3T[k])return D3T[k];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.textAlign='center';x.textBaseline='middle';
-  const fs=txt.length>3?46:txt.length>2?58:txt.length>1?76:92;x.font='900 '+fs+'px system-ui,Arial,sans-serif';x.lineWidth=10;x.strokeStyle='rgba(8,5,12,.72)';x.shadowColor=col||'#fff';x.shadowBlur=5;x.fillStyle='#fff4df';
-  const t2=(txt==='6'||txt==='9')?txt+'.':txt;x.strokeText(t2,64,68);x.fillText(t2,64,68);x.shadowBlur=0;x.lineWidth=2;x.strokeStyle=col||'#fff';x.strokeText(t2,64,68);const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;tx.anisotropy=4;return D3T[k]=tx}
+function d3Tex(T,txt,sz){const k=txt+'|'+sz;if(D3T[k])return D3T[k];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.textAlign='center';x.textBaseline='middle';
+  const fs=txt.length>3?46:txt.length>2?58:txt.length>1?76:92;x.font='800 '+fs+'px system-ui,Arial,sans-serif';x.lineWidth=9;x.strokeStyle='rgba(0,0,0,.55)';x.fillStyle='#fff';
+  const t2=(txt==='6'||txt==='9')?txt+'.':txt;x.strokeText(t2,64,68);x.fillText(t2,64,68);const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;tx.anisotropy=4;return D3T[k]=tx}
 function d3Glow(T,hex){const k='glow'+hex;if(D3T[k])return D3T[k];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,4,64,64,64);g.addColorStop(0,hex+'ff');g.addColorStop(.35,hex+'88');g.addColorStop(1,hex+'00');x.fillStyle=g;x.fillRect(0,0,128,128);const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;return D3T[k]=tx}
 function d3Color(id){if(id){const k=skinOf(id);if(k&&/^#[0-9a-f]{6}$/i.test(k[2]))return k[2]}let c='#6d4aff';try{const v=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();if(/^#[0-9a-f]{6}$/i.test(v))c=v}catch(e){}return c}
 function d3Make(T,die,col){const s=die.s===100?100:die.s,mode=die.part==='t'?'t':die.part==='u'?'u':'n',P=d3Plan(T,s,mode,die.v),I=P.I,grp=new T.Group();
-  const bc=new T.Color(col).multiplyScalar(.86),mat=new T.MeshStandardMaterial({color:bc,roughness:.22,metalness:.52,flatShading:true,emissive:new T.Color(col).multiplyScalar(.07),emissiveIntensity:.16});
+  const bc=new T.Color(col).multiplyScalar(.62),mat=new T.MeshStandardMaterial({color:bc,roughness:.3,metalness:.25,flatShading:true,emissive:new T.Color(0x000000),emissiveIntensity:0});
   grp.add(new T.Mesh(I.g,mat));
-  I.F.forEach((f,i)=>{const t=P.txt(P.lab[i]);if(!t)return;const sz=f.R*I.f*1.05,m=new T.Mesh(new T.PlaneGeometry(sz,sz),new T.MeshBasicMaterial({map:d3Tex(T,t,0,col),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+  const eg=new T.EdgesGeometry(I.g,1);
+  const edgeGlow=new T.LineSegments(eg,new T.LineBasicMaterial({color:0xc8c0ff,transparent:true,opacity:.22}));edgeGlow.scale.setScalar(1.006);grp.add(edgeGlow);
+  const edgeCore=new T.LineSegments(eg,new T.LineBasicMaterial({color:0xf8f4e8,transparent:true,opacity:.9}));edgeCore.scale.setScalar(1.009);grp.add(edgeCore);
+  I.F.forEach((f,i)=>{const t=P.txt(P.lab[i]);if(!t)return;const sz=f.R*I.f*1.05,m=new T.Mesh(new T.PlaneGeometry(sz,sz),new T.MeshBasicMaterial({map:d3Tex(T,t,0),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
     const X=new T.Vector3().crossVectors(f.u,f.n);m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(X,f.u,f.n));m.position.copy(f.c).addScaledVector(f.n,.012);grp.add(m)});
   const face=I.F[P.fi];return{grp,mat,target:d3Target(T,face),rest:Math.max(.3,face.ds)}}
 async function d3Ctl(host,w,h,tight){const T=await mz3Lib(),cv=document.createElement('canvas'),r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
