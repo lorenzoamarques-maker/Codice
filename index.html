@@ -2175,7 +2175,7 @@ function syncTrilha(c,s){if(s.id!=='op'||!c.idn||!c.idn.trilha)return;let blk=nu
   blk[1].forEach((x,i)=>{const id=blk[0]+'|'+x[0];if(i<TRNEX.length&&nex>=TRNEX[i]&&c.trAuto.indexOf(id)<0){c.trAuto.push(id);if(!c.ab.some(y=>y.n===x[0]&&y.cat===cn+' · '+blk[0]))c.ab.push({n:x[0],cat:cn+' · '+blk[0],cost:x[3]||'',d:'(NEX '+TRNEX[i]+'%) '+(x[1]||''),roll:x[2]||'',ic:x[4]||'',tr:trainOf(c,x[5])})}})}
 function applyClass(c,s){const k=CLS_OP[c.cls];if(s.id!=='op'||!k)return;const L=Math.max(0,Math.floor(statVal(c,'nex')/5)-1),V=attrVal(c,s,'vig'),P=attrVal(c,s,'pre');
  const mx={pv:k.pv[0]+V+L*(k.pv[1]+V),pe:k.pe[0]+P+L*(k.pe[1]+P),san:k.san[0]+L*k.san[1]};const F=fxList(c),N=Math.floor(statVal(c,'nex')/5);mx.pv+=num(F.pvnex)*N;mx.san+=num(F.sannex)*N;
- Object.keys(mx).forEach(b=>{const d=c.bars[b]||(c.bars[b]={cur:mx[b],max:mx[b]});d.max=mx[b];if(num(d.cur)>mx[b])d.cur=mx[b]})}
+ Object.keys(mx).forEach(b=>{const d=c.bars[b]||(c.bars[b]={cur:mx[b],max:mx[b]});const lk=c.lockMax&&c.lockMax[b]!=null;if(lk)mx[b]=num(c.lockMax[b]);d.max=mx[b];if(num(d.cur)>mx[b])d.cur=mx[b]})}
 const SRC=['Ordem Paranormal','Arquivos Confidenciais','Marcas Fragmentadas','Insurgentes','Culto da Criação'];
 const PATENTES=[['Mundano',0,'—',''],['Recruta',0,'Baixo','I: 2'],['Operador',20,'Médio','I: 3 · II: 1'],['Agente especial',50,'Médio','I: 3 · II: 2 · III: 1'],['Oficial de operações',100,'Alto','I: 3 · II: 3 · III: 2 · IV: 1'],['Agente de elite',200,'Ilimitado','I: 3 · II: 3 · III: 3 · IV: 2']];
 const NEXV=[5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,99];
@@ -2632,7 +2632,7 @@ function renderHud(){
   el.innerHTML=
    '<div class="hud-id"><label class="portrait" title="Trocar retrato">'+(c.portrait&&c.portrait.indexOf('data:image/')===0?'<img alt="" src="'+esc(c.portrait)+'">':'<span class="p-ph">'+esc(initials(c.name))+'</span>')+'<input type="file" accept="image/*" data-portrait="1"></label>'+
    '<div class="hud-name"><input class="name-in" data-b="name" data-r="name" value="'+esc(c.name)+'" aria-label="Nome do personagem"><div class="sub">'+esc(idn)+'</div><span class="chip">'+esc(s.name)+'</span></div></div>'+
-   '<div class="hud-grid"><div class="bars">'+bars+'</div><div class="radar">'+svg+core+nodes+'</div></div>'+dStrip(c,s);
+   '<div class="hud-grid"><div class="bars">'+bars+(s.id==='op'?'<div class="bar-save" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button type="button" class="btn" data-act="bar-save" title="Fixa os máximos atuais (PV/PE/SAN) para não voltarem ao valor automático">💾 Salvar alterações'+(c.lockMax&&Object.keys(c.lockMax).length?' ✔':'')+'</button>'+(c.lockMax&&Object.keys(c.lockMax).length?'<button type="button" class="btn" data-act="bar-auto" title="Volta a calcular os máximos pela classe/NEX">↺ Automático</button>':'')+'</div>':'')+'</div><div class="radar">'+svg+core+nodes+'</div></div>'+dStrip(c,s);
   s.bars.forEach(b=>updBar(b.k));
 }
 function updBar(k){
@@ -2852,7 +2852,9 @@ function act(a,t){
   case 'save-prof':{if(!c.st){c.st={};s.attrs.forEach(x=>c.st[x.k]=stProf(c,s,x.k))}c.st[k]=!stProf(c,s,k);persist('c_'+c.id);updSaves();break}
   case 'roll-save':{const at=s.attrs.find(x=>x.k===k);if(at)doTest(c,s,'Resistência · '+at.label,k,(stProf(c,s,k)?prof(c,s):0)+num(c.sxs&&c.sxs[k]));break}
   case 'roll-attr':{const at=s.attrs.find(x=>x.k===k);if(s.coc)cocTest(c,s,at.label,attrVal(c,s,k));else doTest(c,s,at.label,k,0);break}
-  case 'bar':{const d=c.bars[k];let v=num(d.cur)+num(t.dataset.d);v=Math.max(0,v);if(num(d.max)>0)v=Math.min(num(d.max),v);d.cur=v;
+  case 'bar-save':{c.lockMax={};['pv','pe','san'].forEach(b=>{if(c.bars[b])c.lockMax[b]=num(c.bars[b].max)});persist('c_'+c.id);renderHud();if(typeof toast==='function')toast('Alterações salvas: máximos fixados');break}
+   case 'bar-auto':{delete c.lockMax;persist('c_'+c.id);renderHud();if(typeof toast==='function')toast('Máximos automáticos');break}
+   case 'bar':{const d=c.bars[k];let v=num(d.cur)+num(t.dataset.d);v=Math.max(0,v);if(num(d.max)>0)v=Math.min(num(d.max),v);d.cur=v;
     const inp=$('input[data-bar="cur"][data-k="'+k+'"]');if(inp)inp.value=v;updBar(k);persist('c_'+c.id);break}
   case 'rank':{const n=s.ranks.length||1;c.rk[k]=(((c.rk[k]||0)+1)%n);persist('c_'+c.id);renderSkills();break}
   case 'roll-skill':{const sk=s.skills.find(x=>x.k===k);if(s.coc)cocTest(c,s,sk.label+(sk.sp&&c.sn&&c.sn[k]?' ('+c.sn[k]+')':''),cocVal(c,s,k));else doTest(c,s,sk.label+(sk.sp&&c.sn&&c.sn[k]?' ('+c.sn[k]+')':''),sk.a,skillBonus(c,s,k),s.op2?k:null);break}
@@ -2967,7 +2969,7 @@ document.addEventListener('input',e=>{
     setPath(c,t.dataset.b,(t.type==='number'||t.dataset.num)?(t.value===''?0:Number(t.value)):t.value);persist('c_'+c.id);
     if(t.dataset.b==='stats.ca')c.caAuto=false;if(/^attrs\./.test(t.dataset.b)||t.dataset.b==='idn.classe'){if(sysOf(c).id==='dnd'){dcAuto(c,sysOf(c));renderHud()}}if(/^attrs\./.test(t.dataset.b))updSaves();if(t.dataset.r==='hud')renderHud();else if(t.dataset.r==='name'){const o=$('#csel option[value="'+c.id+'"]');if(o)o.textContent=(c.name||'Sem nome')+' · '+sysOf(c).name}else if(t.dataset.r==='inv')updInv();else if(t.dataset.r==='dnd'){renderHud();renderTab()}
   }else if(t.dataset.bar){
-    const d=c.bars[t.dataset.k];d[t.dataset.bar]=t.value===''?0:Number(t.value);updBar(t.dataset.k);persist('c_'+c.id);
+    const d=c.bars[t.dataset.k];d[t.dataset.bar]=t.value===''?0:Number(t.value);if(t.dataset.bar==='max'&&sysOf(c).id==='op'&&t.dataset.k!=='pv'||t.dataset.bar==='max'&&sysOf(c).id==='op'&&t.dataset.k==='pv'){c.lockMax=c.lockMax||{};c.lockMax[t.dataset.k]=d.max}updBar(t.dataset.k);persist('c_'+c.id);
   }else if(t.dataset.sv){const k=t.dataset.sv;c.sv=c.sv||{};if(t.value==='')delete c.sv[k];else c.sv[k]=Math.max(0,Number(t.value));persist('c_'+c.id);
     const v=cocVal(c,sysOf(c),k),sp=t.parentNode.querySelector('.sform');if(sp)sp.textContent=Math.floor(v/2)+' / '+Math.floor(v/5);if(k==='mitosdecthulhu'||k==='esquiva')renderHud();
   }else if(t.dataset.sn){c.sn=c.sn||{};c.sn[t.dataset.sn]=t.value;persist('c_'+c.id);
