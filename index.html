@@ -1780,7 +1780,7 @@ function dekCss(){if(document.getElementById('dkCss'))return;const s=document.cr
 #dkOv{perspective:none!important}
 #dkOv .dksc{perspective:none!important}
 #dkOv .dkC{transform-style:flat!important;animation:dk2In .55s ease-out both!important}
-#dkOv .dkI,#dkOv .dkT{transform-style:flat!important;animation:none!important;transform:none!important}
+#dkOv .dkI,#dkOv .dkT{transform-style:flat!important;animation:none!important}#dkOv .dkT{will-change:transform;transition:transform .15s ease-out}
 #dkOv .dkFl{transform-style:flat!important;animation:dk2Fl .7s .35s ease-out both!important}
 #dkOv .dkfr{transform:none!important;backface-visibility:visible!important;-webkit-backface-visibility:visible!important;z-index:2}
 #dkOv .dkbk,#dkOv .dksd{display:none!important}
@@ -1807,7 +1807,7 @@ function dekShow(card,o){o=o||{};dekCss();dekClose();DEK.ov={card:card,mode:o.mo
   const side=['dkl','dkr','dkt2','dkb2'].map(c=>'<div class="dksd '+c+'"></div>').join('');
   el.innerHTML='<div class="dkx" data-dk="x"></div><div class="dksc"><div class="dkC"><div class="dkI"><div class="dkT" id="dkT"><div class="dkFl"><div class="dkfr">'+dekFace(card)+'</div>'+dekBack(o.cv)+''+side+'</div></div></div></div></div><div class="dkcap" id="dkCap"></div><div class="dkbt" id="dkBt"></div>';
   document.body.appendChild(el);dekOvUi();
-  const T=el.querySelector('#dkT'),mv=e=>{const r=el.querySelector('.dksc').getBoundingClientRect(),x=(e.clientX-(r.left+r.width/2))/Math.max(160,innerWidth/2),y=(e.clientY-(r.top+r.height/2))/Math.max(200,innerHeight/2);T.style.transform='rotateY('+Math.max(-1,Math.min(1,x))*26+'deg) rotateX('+Math.max(-1,Math.min(1,y))*-22+'deg)'};
+  const T=el.querySelector('#dkT'),mv=e=>{const r=el.querySelector('.dksc').getBoundingClientRect(),x=(e.clientX-(r.left+r.width/2))/Math.max(160,innerWidth/2),y=(e.clientY-(r.top+r.height/2))/Math.max(200,innerHeight/2);T.style.transform='perspective(800px) rotateY('+Math.max(-1,Math.min(1,x))*22+'deg) rotateX('+Math.max(-1,Math.min(1,y))*-18+'deg) scale(1.03)'};
   el.addEventListener('pointermove',mv);el.addEventListener('pointerdown',mv);el.addEventListener('pointerleave',()=>{T.style.transform=''});
   el.addEventListener('click',e=>{const b=e.target.closest('[data-dka]');if(b){dekOv(b.dataset.dka,b.dataset.v);return}if(e.target.dataset.dk==='x'&&DEK.ov&&DEK.ov.mode!=='gm')dekClose()});
   if(card.ty==='aposta'||card.ty==='pista'){setTimeout(()=>{const sc=el.querySelector('.dksc');if(!sc)return;const em=card.ty==='aposta'?['🪙','✨','♦','🪙']:['🔍','✦','·'];for(let i=0;i<14;i++){const p=document.createElement('span');p.className='dkp';p.textContent=em[i%em.length];p.style.cssText='--dx:'+Math.round((Math.random()-.5)*300)+'px;--dy:'+Math.round(-60-Math.random()*220)+'px;--r:'+Math.round((Math.random()-.5)*360)+'deg;animation-delay:'+(i*.07)+'s';sc.appendChild(p)}},2000)}}
