@@ -1775,6 +1775,30 @@ function dekCss(){if(document.getElementById('dkCss'))return;const s=document.cr
 .dkbt1{font-size:calc(var(--w)*.075);letter-spacing:.08em;text-transform:uppercase;color:#f1d58b;text-shadow:0 1px 3px #000;line-height:1.15}.dkbi small{font-size:calc(var(--w)*.052);opacity:.9;color:#fff;text-shadow:0 1px 3px #000}
 .dkpv{position:relative;width:130px;height:195px;--w:130px;margin:6px 0 10px}.dkpv .dkbk{position:absolute;inset:0;transform:none;backface-visibility:visible;-webkit-backface-visibility:visible;border-radius:12px}
 @media (prefers-reduced-motion:reduce){.dkC,.dkFl,.dkI,.dksh{animation-duration:.01s!important;animation-delay:0s!important}}`;document.head.appendChild(s)}
+
+(function(){const st=document.createElement('style');st.id='dkCss2';st.textContent=`
+#dkOv{perspective:none!important}
+#dkOv .dksc{perspective:none!important}
+#dkOv .dkC{transform-style:flat!important;animation:dk2In .55s ease-out both!important}
+#dkOv .dkI,#dkOv .dkT{transform-style:flat!important;animation:none!important;transform:none!important}
+#dkOv .dkFl{transform-style:flat!important;animation:dk2Fl .7s .35s ease-out both!important}
+#dkOv .dkfr{transform:none!important;backface-visibility:visible!important;-webkit-backface-visibility:visible!important;z-index:2}
+#dkOv .dkbk,#dkOv .dksd{display:none!important}
+@keyframes dk2In{0%{transform:translateY(40px) scale(.6);opacity:0}100%{transform:none;opacity:1}}
+@keyframes dk2Fl{0%{transform:scaleX(.02)}100%{transform:scaleX(1)}}
+.dk-falha .dkI{animation:none!important}
+#dk2err{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:2147483647;background:#7f1d1d;color:#fff;padding:10px 16px;border-radius:8px;font:14px sans-serif;max-width:92vw}`;
+document.head.appendChild(st)})();
+function dek2Msg(m){let e=document.getElementById('dk2err');if(!e){e=document.createElement('div');e.id='dk2err';document.body.appendChild(e)}e.textContent=m;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>{e.style.display='none'},4500)}
+document.addEventListener('click',function(e){const t=e.target.closest&&e.target.closest('[data-z="dek"],[data-h="kd"]');if(!t)return;const v=t.dataset.v||'';const m=/^(draw|drawc)\|(.*)$/.exec(v);if(!m)return;
+  e.stopImmediatePropagation();e.preventDefault();
+  try{if(!dekGm()){dek2Msg('Só o mestre pode puxar cartas.');return}
+    const d=dekDeck();if(!d){dek2Msg('Nenhum baralho criado. Use "Novo baralho" ou "Criar baralho de exemplo".');return}
+    const pool=d.cards.filter(c=>d.out.indexOf(c.id)<0);if(!pool.length){dek2Msg(d.cards.length?'Todas as cartas já foram puxadas. Clique em "Embaralhar".':'Este baralho está vazio. Adicione cartas.');return}
+    if(d.lim!=null&&d.lim<=0){dek2Msg('Limite de cartas atingido. Aumente o limite.');return}
+    dekDraw(m[1]==='drawc'?m[2]:undefined);
+    if(!document.getElementById('dkOv'))dek2Msg('A carta não pôde ser mostrada.')}
+  catch(err){console.error(err);dek2Msg('Erro no baralho: '+(err&&err.message||err))}},true);
 function dekSafe(f){try{return f()}catch(e){console.error('Baralho:',e);try{note('Erro no baralho: '+(e&&e.message||e))}catch(_){}}}
 function dekClose(){const o=document.getElementById('dkOv');if(o)o.remove();DEK.ov=null}
 function dekBroadcast(p){const z=window.__MZ;if(z&&!z.local&&z.ch&&window.__mzSend){window.__mzSend(p);return true}return false}
@@ -1804,7 +1828,7 @@ function dekRecv(p){if(!p||!p.card)return;
   if(p.all){dekShow(p.card,{mode:'pub',cv:p.cv});const c=document.getElementById('dkCap');if(c)c.textContent='O mestre revelou uma carta.';return}
   if(p.to&&p.to===mzUid()){const c=(state.chars||[]).find(q=>q.id===p.cid);if(c){(DEK.hands[p.cid]=DEK.hands[p.cid]||[]).push({uid:p.uid,card:p.card});try{if(dekImport(c)){persist('c_'+c.id);if(typeof renderTab==='function')renderTab()}}catch(e){}}
     dekShow(p.card,{mode:'recv',cv:p.cv})}}
-function dekDraw(cid){const d=dekDeck();if(!d)return;let pool=d.cards.filter(c=>d.out.indexOf(c.id)<0);if(cid)pool=pool.filter(c=>c.id===cid);if(!pool.length){note(d.cards.length?'Todas as cartas já foram puxadas. Clique em "Embaralhar" para devolvê-las.':'Este baralho está vazio. Adicione cartas ou crie o baralho de exemplo.');return}
+function dekDraw(cid){const d=dekDeck();if(!d){note('Nenhum baralho criado.');return}let pool=d.cards.filter(c=>d.out.indexOf(c.id)<0);if(cid)pool=pool.filter(c=>c.id===cid);if(!pool.length){note(d.cards.length?'Todas as cartas já foram puxadas. Clique em "Embaralhar" para devolvê-las.':'Este baralho está vazio. Adicione cartas ou crie o baralho de exemplo.');return}
   if(d.lim!=null&&d.lim<=0){note('Limite de cartas atingido. Aumente o limite para puxar mais.');return}
   let r;try{const a=new Uint32Array(1);crypto.getRandomValues(a);r=a[0]}catch(e){r=Math.floor(Math.random()*4294967296)}
   const c=pool[r%pool.length];if(!d.rep)d.out.push(c.id);if(d.lim!=null)d.lim=Math.max(0,d.lim-1);const h={t:Date.now(),title:c.t,ty:c.ty,deck:d.name,sh:0,who:''};DEK.hist.unshift(h);if(DEK.hist.length>60)DEK.hist.length=60;
