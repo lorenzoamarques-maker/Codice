@@ -90541,13 +90541,46 @@ export { GLTFLoader };
     if(typeof sbLoad==='function')sbLoad(session.user).catch(e=>console.warn('CDM chat: falha ao sincronizar perfil',e));
    }
    if(!me())throw new Error('Não encontrei uma sessão ativa. Saia e entre novamente com Google.');
-   const c=currentCampaign();
-   if(!c)throw new Error('Não consegui identificar a campanha aberta. Volte à lista de campanhas, abra a campanha novamente e tente Conversas.');
+   let c=currentCampaign();
+   if(!c){
+    /* Sem campanha ativa: carrega as campanhas do usuário e oferece seleção
+       dentro do próprio painel de conversas, sem exigir navegação externa. */
+    if(typeof campLoad!=='function')throw new Error('Não consegui carregar a lista de campanhas.');
+    await campLoad();
+    showCampaignPicker();
+    return;
+   }
    await loadRooms();
   }catch(e){
    console.error('CDM chat: falha ao abrir painel',e);
    if(msgs)msgs.innerHTML='<div class="cempty"><b>Não foi possível abrir as conversas.</b><br><br>'+esc(e.message||e)+'<br><br>Feche esta janela e tente novamente.</div>';
   }
+ }
+ function showCampaignPicker(){
+  const msgs=$('cdmChatMsgs'), rooms=$('cdmChatRooms');
+  state.room=null;state.rooms=[];
+  if(rooms)rooms.innerHTML='<div class="csmall">Escolha uma campanha</div>';
+  if(!msgs)return;
+  const list=(typeof CAMP!=='undefined'&&Array.isArray(CAMP.list))?CAMP.list:[];
+  $('cdmChatTitle').textContent='Escolher campanha';
+  if(!list.length){
+   msgs.innerHTML='<div class="cempty"><b>Nenhuma campanha disponível.</b><br><br>Entre em uma campanha ou crie uma na seção Campanhas. Se você já participa de alguma, atualize a lista e tente novamente.</div>';
+   return;
+  }
+  msgs.innerHTML='<div class="cempty" style="text-align:left;max-width:680px;margin:24px auto"><h3 style="color:#e8c783;margin:0 0 8px">Onde deseja conversar?</h3><p class="csmall" style="margin:0 0 16px">Selecione uma campanha da qual você participa.</p><div id="cdmCampaignChoices" style="display:grid;gap:10px">'+list.map(c=>'<button type="button" class="croom" data-chat-campaign="'+esc(c.id)+'" style="text-align:left;padding:14px 16px"><b>'+esc(c.name||'Campanha sem nome')+'</b><div class="csmall">'+esc((typeof CKIND!=='undefined'&&CKIND[c.kind])||c.kind||'Campanha')+'</div></button>').join('')+'</div></div>';
+  document.querySelectorAll('#cdmCampaignChoices [data-chat-campaign]').forEach(b=>b.onclick=async()=>{
+   const id=b.getAttribute('data-chat-campaign');
+   b.disabled=true;b.textContent='Abrindo campanha…';
+   try{
+    if(typeof campOpen!=='function')throw new Error('A abertura de campanhas não está disponível.');
+    await campOpen(id);
+    if(!currentCampaign())throw new Error('Não foi possível abrir essa campanha. Verifique se sua conta tem acesso a ela.');
+    await loadRooms();
+   }catch(e){
+    console.error('CDM chat campaign select',e);
+    b.disabled=false;b.innerHTML='<b>'+esc((list.find(x=>x.id===id)||{}).name||'Tentar novamente')+'</b><div class="csmall">'+esc(e.message||e)+'</div>';
+   }
+  });
  }
  function closeChat(){if(state.channel&&sb){sb.removeChannel(state.channel);state.channel=null}$('cdmChat').classList.remove('open');$('cdmChatContacts').classList.remove('show')}
  async function loadRooms(){const c=currentCampaign();if(!c)return;try{const r=await sb.from('chat_room_members').select('room_id,chat_rooms(id,campaign_id,kind,title,updated_at)').eq('user_id',me());if(r.error)throw r.error;state.rooms=(r.data||[]).map(x=>x.chat_rooms).filter(x=>x&&x.campaign_id===c.id);renderRooms();if(state.room&&state.rooms.some(x=>x.id===state.room))await selectRoom(state.room);else if(state.rooms.length)await selectRoom(state.rooms[0].id);else{$('cdmChatMsgs').innerHTML='<div class="cempty">Você ainda não tem conversas nesta campanha.<br><br>Use <b>＋ Nova conversa</b> para escolher alguém ou crie o chat coletivo.</div>';await showContacts()}}catch(e){$('cdmChatRooms').innerHTML='<div class="csmall">Não foi possível carregar as conversas. Confira se o SQL foi executado e se sua conta participa desta campanha.<br>'+esc(e.message||e)+'</div>';console.error('CDM chat rooms',e)}}
