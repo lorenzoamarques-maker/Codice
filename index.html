@@ -4689,6 +4689,23 @@ tabInv0=function(c,s){
   try{if(cur()&&sysOf(cur()).id==='op')renderTab()}catch(e){}
 })();
 
+/* Ponte entre o código principal (que mantém login/campanhas dentro de uma IIFE)
+   e o módulo de conversas, carregado em outro script. Sem esta ponte o chat não
+   consegue enxergar CAMP, sb, sbUser, campLoad ou campOpen. */
+try {
+  Object.defineProperties(window, {
+    sb: { configurable: true, get: () => sb },
+    sbUser: { configurable: true, get: () => sbUser },
+    CAMP: { configurable: true, get: () => CAMP },
+    SB_URL: { configurable: true, get: () => SB_URL },
+    SB_KEY: { configurable: true, get: () => SB_KEY },
+    sbName: { configurable: true, get: () => sbName },
+    sbLoad: { configurable: true, get: () => sbLoad },
+    campLoad: { configurable: true, get: () => campLoad },
+    campOpen: { configurable: true, get: () => campOpen }
+  });
+} catch (e) { console.error('CDM: não foi possível expor a ponte do chat', e); }
+
 })();
 </script>
 <script>(function(){var b=document.getElementById("boot");if(b&&!window.__bootErr)b.remove()})();</script>
