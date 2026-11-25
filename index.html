@@ -90512,7 +90512,15 @@ export { GLTFLoader };
   $('cdmChatClose').onclick=closeChat;$('cdmGroupBtn').onclick=ensureGroup;$('cdmPrivateBtn').onclick=showContacts;$('cdmContactsBack').onclick=()=>$('cdmChatContacts').classList.remove('show');$('cdmChatSend').onclick=sendMessage;$('cdmChatFile').onchange=e=>{if(e.target.files[0])uploadFile(e.target.files[0]);e.target.value=''};$('cdmChatText').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}};
  }
  }
- function openChat(){ensureUI();const c=currentCampaign();if(!me()||typeof sb==='undefined'||!sb){noteChat('Entre na sua conta para usar as conversas.');return}if(!c){noteChat('Abra uma campanha primeiro para acessar as conversas da mesa.');return}$('cdmChat').classList.add('open');loadRooms()}
+ async function openChat(){ensureUI();
+  /* Aguarda o cliente Supabase terminar de inicializar (evita falso aviso após login Google). */
+  for(let i=0;i<40&&(!sb||typeof sb.auth==='undefined');i++)await new Promise(r=>setTimeout(r,250));
+  if(typeof sb==='undefined'||!sb){noteChat('O serviço de login ainda está carregando. Atualize a página e tente novamente.');return}
+  try{const got=await sb.auth.getSession();const session=got&&got.data&&got.data.session;if(session&&session.user&&(!sbUser||sbUser.id!==session.user.id)){sbUser=session.user;sbLoad(session.user).catch(e=>console.warn('CDM chat: falha ao sincronizar perfil',e));}}catch(e){console.warn('CDM chat: não foi possível recuperar a sessão',e)}
+  if(!me()){noteChat('Não encontrei uma sessão ativa do Códice. Saia e entre novamente com o Google.');return}
+  const c=currentCampaign();if(!c){noteChat('Abra uma campanha primeiro para acessar as conversas da mesa.');return}
+  $('cdmChat').classList.add('open');await loadRooms()
+ }
  function closeChat(){if(state.channel&&sb){sb.removeChannel(state.channel);state.channel=null}$('cdmChat').classList.remove('open');$('cdmChatContacts').classList.remove('show')}
  async function loadRooms(){const c=currentCampaign();if(!c)return;try{const r=await sb.from('chat_room_members').select('room_id,chat_rooms(id,campaign_id,kind,title,updated_at)').eq('user_id',me());if(r.error)throw r.error;state.rooms=(r.data||[]).map(x=>x.chat_rooms).filter(x=>x&&x.campaign_id===c.id);renderRooms();if(state.room&&state.rooms.some(x=>x.id===state.room))await selectRoom(state.room);else if(state.rooms.length)await selectRoom(state.rooms[0].id)}catch(e){$('cdmChatRooms').innerHTML='<div class="csmall">Configure o SQL de conversas no Supabase para ativar o chat.</div>';console.error('CDM chat rooms',e)}}
  function renderRooms(){$('cdmChatRooms').innerHTML=state.rooms.map(r=>`<button class="croom ${r.id===state.room?'active':''}" data-room="${r.id}">${r.kind==='group'?'⚔ ':'✦ '}${esc(r.title|| (r.kind==='group'?'Chat da campanha':'Conversa privada'))}</button>`).join('')||'<div class="csmall">Nenhuma conversa ainda.</div>';document.querySelectorAll('#cdmChatRooms [data-room]').forEach(b=>b.onclick=()=>selectRoom(b.dataset.room))}
