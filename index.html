@@ -90527,7 +90527,7 @@ export { GLTFLoader };
  function noteChat(t){if(typeof window.note==='function')note(t);else alert(t)}
  function ensureUI(){
   if(!$('cdmChatFab')){let b=document.createElement('button');b.id='cdmChatFab';b.textContent='✉ Conversas';document.body.appendChild(b)}
-  if(!$('cdmChat')){let d=document.createElement('div');d.id='cdmChat';d.innerHTML=`<aside id="cdmChatSide"><div style="font:700 17px Georgia;color:#e8c783;margin:3px 0 14px">Conversas da Mesa</div><button class="cbtn" style="width:100%;margin-bottom:8px" id="cdmGroupBtn">＋ Chat da campanha</button><button class="cbtn" style="width:100%;margin-bottom:12px" id="cdmPrivateBtn">＋ Conversa privada</button><div id="cdmChatRooms"></div><div class="csmall" style="margin-top:18px">Anexos temporários: até 10 GB, com remoção automática.</div></aside><section id="cdmChatMain"><header id="cdmChatHead"><b id="cdmChatTitle">Escolha uma conversa</b><button class="cbtn" id="cdmNewPrivateBtn" type="button">＋ Nova conversa</button><button id="cdmChatClose" title="Fechar">×</button></header><div id="cdmChatMsgs"><div class="cempty">Selecione uma conversa ou inicie um novo chat.</div></div><div id="cdmChatProgress"><i id="cdmChatProgressBar"></i></div><div id="cdmChatStatus">Mensagens ficam salvas. Arquivos expiram em 30 minutos ou após todos baixarem.</div><footer id="cdmChatComposer"><label class="cbtn" for="cdmChatFile">＋ Arquivo</label><input id="cdmChatFile" type="file"><textarea id="cdmChatText" placeholder="Escreva uma mensagem…"></textarea><button class="cbtn" id="cdmChatSend">Enviar</button></footer></section><div id="cdmChatContacts"><button class="cbtn" id="cdmContactsBack">← Voltar</button><h3>Nova conversa privada</h3><div class="csmall">Escolha alguém desta campanha. Só vocês dois terão acesso.</div><div id="cdmPeopleList"></div></div></div>`;document.body.appendChild(d)}
+  if(!$('cdmChat')){let d=document.createElement('div');d.id='cdmChat';d.innerHTML=`<aside id="cdmChatSide"><div style="font:700 17px Georgia;color:#e8c783;margin:3px 0 14px">Conversas da Mesa</div><button class="cbtn" style="width:100%;margin-bottom:8px" id="cdmGroupBtn">＋ Chat da campanha</button><button class="cbtn" style="width:100%;margin-bottom:12px" id="cdmPrivateBtn">＋ Conversa privada</button><div id="cdmChatRooms"></div><div class="csmall" style="margin-top:18px">Anexos temporários: até 10 GB, com remoção automática.</div></aside><section id="cdmChatMain"><header id="cdmChatHead"><b id="cdmChatTitle">Escolha uma conversa</b><button class="cbtn" id="cdmNewPrivateBtn" type="button">＋ Nova conversa</button><button id="cdmChatClose" title="Fechar">×</button></header><div id="cdmChatMsgs"><div class="cempty">Selecione uma conversa ou inicie um novo chat.</div></div><div id="cdmChatProgress"><i id="cdmChatProgressBar"></i></div><div id="cdmChatStatus">Mensagens ficam salvas. Arquivos expiram em 30 minutos ou após todos baixarem.</div><footer id="cdmChatComposer"><button class="cbtn" id="cdmChatPickFile" type="button">＋ Arquivo</button><input id="cdmChatFile" type="file" aria-label="Escolher arquivo"><textarea id="cdmChatText" placeholder="Escreva uma mensagem…"></textarea><button class="cbtn" id="cdmChatSend">Enviar</button></footer></section><div id="cdmChatContacts"><button class="cbtn" id="cdmContactsBack">← Voltar</button><h3>Nova conversa privada</h3><div class="csmall">Escolha alguém desta campanha. Só vocês dois terão acesso.</div><div id="cdmPeopleList"></div></div></div>`;document.body.appendChild(d)}
   /* Reassocia os eventos mesmo se o painel já existir no DOM. */
   /* O clique principal é tratado por delegação em capture abaixo; evita conflito
      com handlers globais da navegação do Códice. */
@@ -90538,7 +90538,13 @@ export { GLTFLoader };
   $('cdmNewPrivateBtn').onclick=showContacts;
   $('cdmContactsBack').onclick=()=>$('cdmChatContacts').classList.remove('show');
   $('cdmChatSend').onclick=sendMessage;
-  $('cdmChatFile').onchange=e=>{if(e.target.files[0])uploadFile(e.target.files[0]);e.target.value=''};
+  $('cdmChatPickFile').onclick=()=>{if(!state.room){noteChat('Abra uma conversa antes de anexar um arquivo.');return;}$('cdmChatFile').click()};
+  $('cdmChatFile').onchange=async e=>{
+   const file=e.target.files&&e.target.files[0];
+   if(!file)return;
+   try{await uploadFile(file)}catch(err){console.error('CDM chat file picker',err);noteChat('Não foi possível iniciar o envio: '+(err.message||err))}
+   finally{e.target.value=''}
+  };
   $('cdmChatText').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}};
  }
  async function openChat(){
@@ -90608,7 +90614,75 @@ export { GLTFLoader };
  async function selectRoom(id){if(state.channel){sb.removeChannel(state.channel);state.channel=null}state.room=id;state.roomMeta=state.rooms.find(x=>x.id===id)||null;renderRooms();$('cdmChatTitle').textContent=state.roomMeta?.title||(state.roomMeta?.kind==='group'?'Chat da campanha':'Conversa privada');$('cdmChatMsgs').innerHTML='<div class="cempty">Carregando mensagens…</div>';try{const r=await sb.from('chat_messages').select('*').eq('room_id',id).order('created_at',{ascending:true}).limit(500);if(r.error)throw r.error;state.messages=r.data||[];renderMessages();state.channel=sb.channel('cdm-chat-'+id).on('postgres_changes',{event:'*',schema:'public',table:'chat_messages',filter:'room_id=eq.'+id},payload=>{if(payload.eventType==='INSERT'){if(!state.messages.some(x=>x.id===payload.new.id))state.messages.push(payload.new);renderMessages()}else if(payload.eventType==='DELETE'){state.messages=state.messages.filter(x=>x.id!==payload.old.id);renderMessages()}}).subscribe()}catch(e){$('cdmChatMsgs').innerHTML='<div class="cempty">Não foi possível carregar as mensagens. Verifique as políticas do banco.</div>';console.error(e)}}
  function renderMessages(){const box=$('cdmChatMsgs');if(!box)return;box.innerHTML=state.messages.map(m=>{const mine=m.sender_id===me(),date=new Date(m.created_at).toLocaleString();let f=m.file_path?`<a href="#" class="cfile" data-download="${m.id}">⇩ ${esc(m.file_name||'Arquivo')} (${fmt(m.file_size)})</a>`:'';return `<article class="cmsg ${mine?'mine':''}"><div class="cmeta">${mine?'Você':esc(m.sender_name||'Participante')} · ${esc(date)}</div>${m.body?`<div>${esc(m.body).replace(/\n/g,'<br>')}</div>`:''}${f}${mine?`<button data-delete="${m.id}" style="background:none;border:0;color:#b99a78;font-size:11px;margin-top:5px">Apagar</button>`:''}</article>`}).join('')||'<div class="cempty">Esta conversa ainda não tem mensagens.</div>';box.scrollTop=box.scrollHeight;box.querySelectorAll('[data-download]').forEach(a=>a.onclick=e=>{e.preventDefault();downloadFile(a.dataset.download)});box.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteMessage(b.dataset.delete))}
  async function sendMessage(){const body=$('cdmChatText').value.trim();if(!body||!state.room)return;const c=currentCampaign();$('cdmChatSend').disabled=true;try{const r=await sb.from('chat_messages').insert({room_id:state.room,campaign_id:c.id,sender_id:me(),sender_name:(typeof sbName==='function'?sbName():'Participante'),body}).select().single();if(r.error)throw r.error;$('cdmChatText').value='';if(!state.messages.some(x=>x.id===r.data.id)){state.messages.push(r.data);renderMessages()}}catch(e){noteChat('Não foi possível enviar a mensagem: '+(e.message||''))}finally{$('cdmChatSend').disabled=false}}
- async function uploadFile(file){if(!state.room||state.uploading)return;if(file.size>10*1024*1024*1024){noteChat('O arquivo ultrapassa o limite de 10 GB.');return}if(!window.tus){await loadTus()}if(!window.tus){noteChat('Não foi possível carregar o módulo de envio retomável.');return}const c=currentCampaign(),{data:{session}}=await sb.auth.getSession();if(!session){noteChat('Sua sessão expirou. Entre novamente.');return}state.uploading=true;$('cdmChatStatus').textContent='Preparando envio…';$('cdmChatSend').disabled=true;const path=c.id+'/'+state.room+'/'+me()+'/'+Date.now()+'-'+file.name.replace(/[^\w.\-]+/g,'_');try{await new Promise((resolve,reject)=>{const up=new tus.Upload(file,{endpoint:SB_URL+'/storage/v1/upload/resumable',chunkSize:6*1024*1024,retryDelays:[0,1000,3000,5000,10000],headers:{authorization:'Bearer '+session.access_token,apikey:SB_KEY,'x-upsert':'false'},metadata:{bucketName:'mesa-chat',objectName:path,contentType:file.type||'application/octet-stream',cacheControl:'1800'},onError:reject,onProgress:(sent,total)=>{const pct=Math.round(sent/total*100);$('cdmChatProgressBar').style.width=pct+'%';$('cdmChatStatus').textContent='Enviando '+pct+'% · '+fmt(sent)+' de '+fmt(total)},onSuccess:resolve});up.findPreviousUploads().then(prev=>{if(prev.length)up.resumeFromPreviousUpload(prev[0]);up.start()}).catch(reject)});const r=await sb.from('chat_messages').insert({room_id:state.room,campaign_id:c.id,sender_id:me(),sender_name:(typeof sbName==='function'?sbName():'Participante'),body:'',file_path:path,file_name:file.name,file_size:file.size,mime_type:file.type||'application/octet-stream',expires_at:new Date(Date.now()+30*60*1000).toISOString()}).select().single();if(r.error)throw r.error;if(!state.messages.some(x=>x.id===r.data.id)){state.messages.push(r.data);renderMessages()}$('cdmChatStatus').textContent='Arquivo enviado. Disponível por até 30 minutos ou até todos baixarem.'}catch(e){noteChat('Falha no envio: '+(e.message||e));$('cdmChatStatus').textContent='O envio falhou. Você pode tentar novamente.'}finally{state.uploading=false;$('cdmChatSend').disabled=false;$('cdmChatProgressBar').style.width='0%'}}
+ async function uploadFile(file){
+  if(!file)return;
+  if(!state.room){noteChat('Abra uma conversa antes de anexar um arquivo.');return}
+  if(state.uploading){noteChat('Já existe um envio em andamento. Aguarde terminar.');return}
+  const maxBytes=10*1024*1024*1024;
+  if(file.size>maxBytes){noteChat('O arquivo ultrapassa o limite de 10 GB.');return}
+  if(!file.size){noteChat('Este arquivo está vazio. Escolha outro arquivo.');return}
+  state.uploading=true;
+  $('cdmChatSend').disabled=true;
+  $('cdmChatPickFile').disabled=true;
+  $('cdmChatStatus').textContent='Preparando '+file.name+'…';
+  $('cdmChatProgressBar').style.width='0%';
+  try{
+   if(!window.tus)await loadTus();
+   if(!window.tus||typeof window.tus.Upload!=='function')throw new Error('Não consegui carregar a biblioteca de envio retomável. Verifique a conexão e tente novamente.');
+   if(typeof sb==='undefined'||!sb||!sb.storage)throw new Error('O serviço de armazenamento não está inicializado.');
+   const camp=currentCampaign();
+   if(!camp||!camp.id)throw new Error('Não consegui identificar a campanha desta conversa.');
+   const auth=await sb.auth.getSession();
+   if(auth.error)throw auth.error;
+   const session=auth.data&&auth.data.session;
+   if(!session)throw new Error('Sua sessão expirou. Entre novamente com Google.');
+   if(!SB_URL||!SB_KEY)throw new Error('A configuração do Supabase não foi encontrada.');
+   const safeName=file.name.replace(/[^\w.\-]+/g,'_').slice(-180)||'arquivo';
+   const path=camp.id+'/'+state.room+'/'+me()+'/'+Date.now()+'-'+safeName;
+   await new Promise((resolve,reject)=>{
+    const up=new window.tus.Upload(file,{
+     endpoint:SB_URL+'/storage/v1/upload/resumable',
+     chunkSize:6*1024*1024,
+     retryDelays:[0,1000,3000,5000,10000],
+     headers:{authorization:'Bearer '+session.access_token,apikey:SB_KEY,'x-upsert':'false'},
+     metadata:{bucketName:'mesa-chat',objectName:path,contentType:file.type||'application/octet-stream',cacheControl:'1800'},
+     onError:reject,
+     onProgress:(sent,total)=>{
+      const pct=Math.round(sent/total*100);
+      $('cdmChatProgressBar').style.width=pct+'%';
+      $('cdmChatStatus').textContent='Enviando '+pct+'% · '+fmt(sent)+' de '+fmt(total);
+     },
+     onSuccess:resolve
+    });
+    up.findPreviousUploads().then(prev=>{if(prev.length)up.resumeFromPreviousUpload(prev[0]);up.start()}).catch(reject);
+   });
+   const inserted=await sb.from('chat_messages').insert({
+    room_id:state.room,campaign_id:camp.id,sender_id:me(),
+    sender_name:(typeof sbName==='function'?sbName():'Participante'),
+    body:'',file_path:path,file_name:file.name,file_size:file.size,
+    mime_type:file.type||'application/octet-stream',
+    expires_at:new Date(Date.now()+30*60*1000).toISOString()
+   }).select().single();
+   if(inserted.error){
+    await sb.storage.from('mesa-chat').remove([path]).catch(()=>{});
+    throw inserted.error;
+   }
+   if(!state.messages.some(x=>x.id===inserted.data.id)){
+    state.messages.push(inserted.data);renderMessages();
+   }
+   $('cdmChatStatus').textContent='Arquivo enviado. Disponível por até 30 minutos ou até todos os destinatários baixarem.';
+  }catch(e){
+   console.error('CDM chat upload error',e);
+   const msg=e&&e.message?e.message:String(e);
+   $('cdmChatStatus').textContent='Falha no envio: '+msg;
+   noteChat('Falha no envio do arquivo: '+msg+' — confira se o bucket privado mesa-chat e as políticas de Storage foram criados no Supabase.');
+  }finally{
+   state.uploading=false;
+   $('cdmChatSend').disabled=false;
+   $('cdmChatPickFile').disabled=false;
+   $('cdmChatProgressBar').style.width='0%';
+  }
+ }
  function loadTus(){return new Promise(resolve=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js';s.onload=resolve;s.onerror=resolve;document.head.appendChild(s)})}
  async function downloadFile(id){const m=state.messages.find(x=>x.id===id);if(!m||!m.file_path)return;try{const r=await sb.storage.from('mesa-chat').createSignedUrl(m.file_path,300);if(r.error)throw r.error;const a=document.createElement('a');a.href=r.data.signedUrl;a.target='_blank';a.rel='noopener';a.download=m.file_name||'arquivo';a.click();await sb.from('chat_file_downloads').upsert({message_id:id,user_id:me(),downloaded_at:new Date().toISOString()},{onConflict:'message_id,user_id'});noteChat('Download iniciado. O servidor removerá o anexo quando todos os participantes baixarem ou quando completar 30 minutos.')}catch(e){noteChat('Não foi possível baixar. Talvez o arquivo já tenha expirado. '+(e.message||''))}}
  async function deleteMessage(id){if(!confirm('Apagar esta mensagem?'))return;try{const r=await sb.from('chat_messages').delete().eq('id',id);if(r.error)throw r.error;state.messages=state.messages.filter(x=>x.id!==id);renderMessages()}catch(e){noteChat('Não foi possível apagar: '+(e.message||''))}}
