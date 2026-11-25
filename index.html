@@ -90512,7 +90512,9 @@ export { GLTFLoader };
   if(!$('cdmChatFab')){let b=document.createElement('button');b.id='cdmChatFab';b.textContent='✉ Conversas';document.body.appendChild(b)}
   if(!$('cdmChat')){let d=document.createElement('div');d.id='cdmChat';d.innerHTML=`<aside id="cdmChatSide"><div style="font:700 17px Georgia;color:#e8c783;margin:3px 0 14px">Conversas da Mesa</div><button class="cbtn" style="width:100%;margin-bottom:8px" id="cdmGroupBtn">＋ Chat da campanha</button><button class="cbtn" style="width:100%;margin-bottom:12px" id="cdmPrivateBtn">＋ Conversa privada</button><div id="cdmChatRooms"></div><div class="csmall" style="margin-top:18px">Anexos temporários: até 10 GB, com remoção automática.</div></aside><section id="cdmChatMain"><header id="cdmChatHead"><b id="cdmChatTitle">Escolha uma conversa</b><button class="cbtn" id="cdmNewPrivateBtn" type="button">＋ Nova conversa</button><button id="cdmChatClose" title="Fechar">×</button></header><div id="cdmChatMsgs"><div class="cempty">Selecione uma conversa ou inicie um novo chat.</div></div><div id="cdmChatProgress"><i id="cdmChatProgressBar"></i></div><div id="cdmChatStatus">Mensagens ficam salvas. Arquivos expiram em 30 minutos ou após todos baixarem.</div><footer id="cdmChatComposer"><label class="cbtn" for="cdmChatFile">＋ Arquivo</label><input id="cdmChatFile" type="file"><textarea id="cdmChatText" placeholder="Escreva uma mensagem…"></textarea><button class="cbtn" id="cdmChatSend">Enviar</button></footer></section><div id="cdmChatContacts"><button class="cbtn" id="cdmContactsBack">← Voltar</button><h3>Nova conversa privada</h3><div class="csmall">Escolha alguém desta campanha. Só vocês dois terão acesso.</div><div id="cdmPeopleList"></div></div></div>`;document.body.appendChild(d)}
   /* Reassocia os eventos mesmo se o painel já existir no DOM. */
-  $('cdmChatFab').onclick=openChat;
+  /* O clique principal é tratado por delegação em capture abaixo; evita conflito
+     com handlers globais da navegação do Códice. */
+  $('cdmChatFab').onclick=null;
   $('cdmChatClose').onclick=closeChat;
   $('cdmGroupBtn').onclick=ensureGroup;
   $('cdmPrivateBtn').onclick=showContacts;
@@ -90522,14 +90524,30 @@ export { GLTFLoader };
   $('cdmChatFile').onchange=e=>{if(e.target.files[0])uploadFile(e.target.files[0]);e.target.value=''};
   $('cdmChatText').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}};
  }
- async function openChat(){ensureUI();
-  /* Aguarda o cliente Supabase terminar de inicializar (evita falso aviso após login Google). */
-  for(let i=0;i<40&&(!sb||typeof sb.auth==='undefined');i++)await new Promise(r=>setTimeout(r,250));
-  if(typeof sb==='undefined'||!sb){noteChat('O serviço de login ainda está carregando. Atualize a página e tente novamente.');return}
-  try{const got=await sb.auth.getSession();const session=got&&got.data&&got.data.session;if(session&&session.user&&(!sbUser||sbUser.id!==session.user.id)){sbUser=session.user;sbLoad(session.user).catch(e=>console.warn('CDM chat: falha ao sincronizar perfil',e));}}catch(e){console.warn('CDM chat: não foi possível recuperar a sessão',e)}
-  if(!me()){noteChat('Não encontrei uma sessão ativa do Códice. Saia e entre novamente com o Google.');return}
-  const c=currentCampaign();if(!c){noteChat('Abra uma campanha primeiro para acessar as conversas da mesa.');return}
-  $('cdmChat').classList.add('open');await loadRooms()
+ async function openChat(){
+  ensureUI();
+  const panel=$('cdmChat'), msgs=$('cdmChatMsgs');
+  if(panel)panel.classList.add('open');
+  if(msgs)msgs.innerHTML='<div class="cempty">Conectando às conversas da campanha…</div>';
+  try{
+   /* Aguarda a inicialização do cliente Supabase e recupera a sessão Google. */
+   for(let i=0;i<40&&(!sb||typeof sb.auth==='undefined');i++)await new Promise(r=>setTimeout(r,250));
+   if(typeof sb==='undefined'||!sb){throw new Error('O serviço de login do Códice ainda não terminou de carregar.')}
+   const got=await sb.auth.getSession();
+   if(got&&got.error)throw got.error;
+   const session=got&&got.data&&got.data.session;
+   if(session&&session.user&&(!sbUser||sbUser.id!==session.user.id)){
+    sbUser=session.user;
+    if(typeof sbLoad==='function')sbLoad(session.user).catch(e=>console.warn('CDM chat: falha ao sincronizar perfil',e));
+   }
+   if(!me())throw new Error('Não encontrei uma sessão ativa. Saia e entre novamente com Google.');
+   const c=currentCampaign();
+   if(!c)throw new Error('Não consegui identificar a campanha aberta. Volte à lista de campanhas, abra a campanha novamente e tente Conversas.');
+   await loadRooms();
+  }catch(e){
+   console.error('CDM chat: falha ao abrir painel',e);
+   if(msgs)msgs.innerHTML='<div class="cempty"><b>Não foi possível abrir as conversas.</b><br><br>'+esc(e.message||e)+'<br><br>Feche esta janela e tente novamente.</div>';
+  }
  }
  function closeChat(){if(state.channel&&sb){sb.removeChannel(state.channel);state.channel=null}$('cdmChat').classList.remove('open');$('cdmChatContacts').classList.remove('show')}
  async function loadRooms(){const c=currentCampaign();if(!c)return;try{const r=await sb.from('chat_room_members').select('room_id,chat_rooms(id,campaign_id,kind,title,updated_at)').eq('user_id',me());if(r.error)throw r.error;state.rooms=(r.data||[]).map(x=>x.chat_rooms).filter(x=>x&&x.campaign_id===c.id);renderRooms();if(state.room&&state.rooms.some(x=>x.id===state.room))await selectRoom(state.room);else if(state.rooms.length)await selectRoom(state.rooms[0].id);else{$('cdmChatMsgs').innerHTML='<div class="cempty">Você ainda não tem conversas nesta campanha.<br><br>Use <b>＋ Nova conversa</b> para escolher alguém ou crie o chat coletivo.</div>';await showContacts()}}catch(e){$('cdmChatRooms').innerHTML='<div class="csmall">Não foi possível carregar as conversas. Confira se o SQL foi executado e se sua conta participa desta campanha.<br>'+esc(e.message||e)+'</div>';console.error('CDM chat rooms',e)}}
@@ -90544,6 +90562,14 @@ export { GLTFLoader };
  function loadTus(){return new Promise(resolve=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js';s.onload=resolve;s.onerror=resolve;document.head.appendChild(s)})}
  async function downloadFile(id){const m=state.messages.find(x=>x.id===id);if(!m||!m.file_path)return;try{const r=await sb.storage.from('mesa-chat').createSignedUrl(m.file_path,300);if(r.error)throw r.error;const a=document.createElement('a');a.href=r.data.signedUrl;a.target='_blank';a.rel='noopener';a.download=m.file_name||'arquivo';a.click();await sb.from('chat_file_downloads').upsert({message_id:id,user_id:me(),downloaded_at:new Date().toISOString()},{onConflict:'message_id,user_id'});noteChat('Download iniciado. O servidor removerá o anexo quando todos os participantes baixarem ou quando completar 30 minutos.')}catch(e){noteChat('Não foi possível baixar. Talvez o arquivo já tenha expirado. '+(e.message||''))}}
  async function deleteMessage(id){if(!confirm('Apagar esta mensagem?'))return;try{const r=await sb.from('chat_messages').delete().eq('id',id);if(r.error)throw r.error;state.messages=state.messages.filter(x=>x.id!==id);renderMessages()}catch(e){noteChat('Não foi possível apagar: '+(e.message||''))}}
+ /* Captura o botão antes dos listeners gerais do site. Isso garante que o
+    controle flutuante abra o painel mesmo se a navegação principal interceptar cliques. */
+ document.addEventListener('click',function(ev){
+  const fab=ev.target&&ev.target.closest?ev.target.closest('#cdmChatFab'):null;
+  if(!fab)return;
+  ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+  openChat().catch(err=>{console.error('CDM chat click',err);noteChat('Erro ao abrir conversas: '+(err.message||err))});
+ },true);
  setInterval(()=>{if(document.body&&!$('cdmChatFab'))ensureUI()},1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureUI);else ensureUI();
 })();
 </script>
