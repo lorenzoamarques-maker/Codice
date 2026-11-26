@@ -3128,6 +3128,22 @@ async function mesaOpen(v){
 function mesaClose(){mz3Stop();musStop();const r=document.getElementById('mz');if(r)r.remove();if(MZ.ch&&sb){try{sb.removeChannel(MZ.ch)}catch(e){}}MZ.ch=null;document.removeEventListener('keydown',mzKey);window.removeEventListener('resize',mzDraw)}
 
 /* ---- rede (Supabase Realtime broadcast) ---- */
+
+/* ================= SEGUNDO PLANO (celular): sessão de mídia + áudio silencioso enquanto há call ou música ================= */
+const BG={a:null,on:0,ok:1};
+function bgWav(){const n=8000,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,16000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);let s='',u=new Uint8Array(b);for(let i=0;i<u.length;i+=4096)s+=String.fromCharCode.apply(null,u.subarray(i,i+4096));return 'data:audio/wav;base64,'+btoa(s)}
+function bgNeed(){let c=0,m=0;try{c=!!(typeof CL!=='undefined'&&CL.on)}catch(e){}try{m=!!(MUS&&MUS.play&&MUS.cur>=0&&musTr())}catch(e){}return {c:c,m:m}}
+function bgTick(){const n=bgNeed(),need=n.c||n.m;
+ if(need){if(!BG.a){const a=document.createElement('audio');a.src=bgWav();a.loop=true;a.volume=.01;a.setAttribute('playsinline','');a.style.display='none';document.body.appendChild(a);BG.a=a}
+  if(BG.a.paused){const p=BG.a.play();if(p&&p.catch)p.catch(()=>{})}}
+ else if(BG.a&&!BG.a.paused)BG.a.pause();
+ try{const ms=navigator.mediaSession;if(!ms)return;
+  if(need){let t=n.c?'Chamada da campanha':((musTr()&&(musTr().n||musTr().name||musTr().t))||'Música da mesa');ms.metadata=new MediaMetadata({title:String(t).slice(0,100),artist:n.c&&n.m?'Chamada + música':'Códice de Mesa',album:'Mesa Virtual'});ms.playbackState='playing';
+   const H=(k,f)=>{try{ms.setActionHandler(k,f)}catch(e){}};H('hangup',n.c?()=>{try{clLeave()}catch(e){}}:null);H('play',()=>{if(BG.a)BG.a.play().catch(()=>{});try{clKick()}catch(e){}});H('pause',()=>{});H('stop',null)}
+  else{ms.playbackState='none';ms.metadata=null}}catch(e){}}
+setInterval(bgTick,2000);document.addEventListener('click',bgTick,true);document.addEventListener('touchend',bgTick,true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){bgTick();try{if(sb&&sb.realtime&&typeof sb.realtime.connect==='function'&&!sb.realtime.isConnected())sb.realtime.connect()}catch(e){}}});
+
 /* ================= CHAMADA DE VOZ, CÂMERA E TELA (WebRTC, sinalização pelo Supabase Realtime) ================= */
 const CL={on:0,cid:null,ch:null,peers:{},mem:{},mic:null,cam:null,scr:null,muted:0,open:0,foc:null,vs:{},au:{},lv:{},ac:null,tl:{},ice:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turns:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
 try{const t=JSON.parse(localStorage.getItem('callTurn')||'null');if(t&&t.urls)CL.ice.iceServers.push(t)}catch(e){}
