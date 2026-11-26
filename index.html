@@ -3325,14 +3325,14 @@ async function clRecToggle(){
  if(CL.rec){clRecStop();return}
  if(!clIsGm()||!CL.on)return;
  if(typeof MediaRecorder==='undefined'){note('Este navegador não grava áudio. Use o Chrome, Edge ou Firefox.');return}
- let sysP=null;if(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia&&confirm('Gravar também o som do computador (outros aplicativos, músicas, outras abas)?\n\nOK = o navegador vai pedir para compartilhar a tela. Escolha "Tela inteira" e marque "Compartilhar áudio do sistema".\nCancelar = gravar só a chamada.'))sysP=clGetSys();
+ let sysP=(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia)?clGetSys():null;
  try{const A=window.AudioContext||window.webkitAudioContext;CL.ac=CL.ac||new A();try{await CL.ac.resume()}catch(e){}
   const dst=CL.ac.createMediaStreamDestination(),R={dst:dst,srcs:{},chunks:[],t0:Date.now()};CL.rec=R;clRecAttach();
   if(sysP){const r=await sysP;if(r&&r.stream)clRecSysAttach(R,r.stream);else if(r&&r.msg)note(r.msg)}
   const mt=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(x=>{try{return MediaRecorder.isTypeSupported(x)}catch(e){return false}})||'';
   R.mime=mt;let vs=null;try{vs=clRecCanvas(R)}catch(e){vs=null}
   const vt=vs&&['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1,opus','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>{try{return MediaRecorder.isTypeSupported(x)}catch(e){return false}});
-  let wantV=!!vt;if(vt&&!confirm('Gravar também o vídeo da chamada?\n\nOK = vídeo e áudio ('+(/mp4/.test(vt)?'MP4':'WEBM, este navegador não grava MP4')+')\nCancelar = só o áudio, em MP3'))wantV=false;
+  let wantV=!!vt;
   if(wantV){R.mime=vt;R.video=1;R.mr=new MediaRecorder(new MediaStream(vs.getVideoTracks().concat(dst.stream.getAudioTracks())),{mimeType:vt,videoBitsPerSecond:2200000,audioBitsPerSecond:96000})}
   else{if(R.dr){clearInterval(R.dr);R.dr=0}R.video=0;let LM=null;try{LM=await Promise.race([clLoadLame(),new Promise((_,j)=>setTimeout(j,8000))])}catch(e){LM=null}
    if(LM&&CL.ac.createScriptProcessor&&CL.ac.createMediaStreamSource){clRecMp3(R,LM)}else{R.mr=new MediaRecorder(dst.stream,mt?{mimeType:mt,audioBitsPerSecond:96000}:undefined);note('Não consegui carregar o conversor de MP3. O áudio será salvo no formato original do navegador.')}}
