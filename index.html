@@ -2570,7 +2570,9 @@ function showLogin(){
   document.body.appendChild(d);
 }
 const hideLogin=()=>{const d=$('#login');if(d)d.remove()};
-function sbOAuth(p){if(sb)sb.auth.signInWithOAuth({provider:p,options:{redirectTo:location.origin+location.pathname}})}
+function sbOAuth(p){if(!sb)return;
+ if(CDMN.ok()&&CDMN.P('Browser')){sb.auth.signInWithOAuth({provider:p,options:{redirectTo:'codicemesa://auth',skipBrowserRedirect:true}}).then(r=>{if(r&&r.data&&r.data.url)CDMN.P('Browser').open({url:r.data.url});else note('Não consegui abrir o login.')}).catch(()=>note('Não consegui abrir o login.'));return}
+ sb.auth.signInWithOAuth({provider:p,options:{redirectTo:location.origin+location.pathname}})}
 async function sbOut(){try{await sb.auth.signOut()}catch(e){}try{localStorage.removeItem(LS);localStorage.removeItem(LS+'_u')}catch(e){}location.reload()}
 async function sbWrite(key){
   try{const d=docData(key);
@@ -3309,7 +3311,7 @@ function clMicMsg(){const e=CL.micErr;return e==='unsupported'?'Este navegador n
 const clIsGm=()=>!!(sbUser&&CAMP.cur&&CAMP.cur.owner===sbUser.id);
 function clRecSrc(R,key,stream){if(!R||!stream||!CL.ac||!stream.getAudioTracks().length)return;const o=R.srcs[key];if(o&&o.s===stream)return;if(o){try{o.n.disconnect()}catch(e){}}try{const n=CL.ac.createMediaStreamSource(stream);n.connect(R.dst);R.srcs[key]={s:stream,n:n}}catch(e){}}
 function clRecAttach(){const R=CL.rec;if(!R)return;if(CL.mic)clRecSrc(R,'me',CL.mic);if(!R.skipRemote)Object.keys(CL.au||{}).forEach(id=>(CL.au[id]||[]).forEach(a=>{if(a.srcObject)clRecSrc(R,id+':'+a.srcObject.id,a.srcObject)}))}
-function clRecBanner(){const w=document.getElementById('clw');if(!w)return;let b=w.querySelector('.rcb');const rcb2=()=>{const bb=w.querySelector('.rcb');if(!bb)return;let x=bb.querySelector('.rcs');if(!CL.rec){if(x)x.remove();return}if(!x){x=document.createElement('button');x.className='rcs';x.style.cssText='margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer';x.onclick=clRecSysBtn;bb.appendChild(x)}x.textContent=CL.rec.sys?'🔊 Som do computador: ligado':'🔊 Gravar som do computador';x.disabled=!!CL.rec.sys};const on=(!!CL.on&&Object.keys(CL.mem||{}).some(id=>CL.mem[id]&&CL.mem[id].rc))||!!CL.rec;if(on&&!b){b=document.createElement('div');b.className='rcb';b.textContent='● Esta chamada está sendo gravada pelo mestre';w.appendChild(b)}else if(!on&&b)b.remove();rcb2()}
+function clRecBanner(){const w=document.getElementById('clw');if(!w)return;let b=w.querySelector('.rcb');const rcb2=()=>{const bb=w.querySelector('.rcb');if(!bb)return;let x=bb.querySelector('.rcs');if(!CL.rec||CL.rec.native){if(x)x.remove();return}if(!x){x=document.createElement('button');x.className='rcs';x.style.cssText='margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer';x.onclick=clRecSysBtn;bb.appendChild(x)}x.textContent=CL.rec.sys?'🔊 Som do computador: ligado':'🔊 Gravar som do computador';x.disabled=!!CL.rec.sys};const on=(!!CL.on&&Object.keys(CL.mem||{}).some(id=>CL.mem[id]&&CL.mem[id].rc))||!!CL.rec;if(on&&!b){b=document.createElement('div');b.className='rcb';b.textContent='● Esta chamada está sendo gravada pelo mestre';w.appendChild(b)}else if(!on&&b)b.remove();rcb2()}
 function clRecCanvas(R){if(!HTMLCanvasElement.prototype.captureStream)return null;const c=document.createElement('canvas');c.width=1280;c.height=720;const x=c.getContext('2d');R.cv=c;
  const tile=(t,X,Y,W,H)=>{const cs=getComputedStyle(t),v=t.querySelector('video'),scr=t.classList.contains('scr');x.save();x.beginPath();if(x.roundRect)x.roundRect(X,Y,W,H,12);else x.rect(X,Y,W,H);x.clip();x.fillStyle=scr?'#000':(cs.backgroundColor||'#333');x.fillRect(X,Y,W,H);
   if(v&&t.classList.contains('vv')&&v.videoWidth&&v.readyState>=2){const k=scr?Math.min(W/v.videoWidth,H/v.videoHeight):Math.max(W/v.videoWidth,H/v.videoHeight),w=v.videoWidth*k,h=v.videoHeight*k;try{x.drawImage(v,X+(W-w)/2,Y+(H-h)/2,w,h)}catch(e){}}
@@ -3321,35 +3323,50 @@ function clRecCanvas(R){if(!HTMLCanvasElement.prototype.captureStream)return nul
   if(main&&T.length>1){const rest=T.filter(t=>t!==main),sw=Math.min(240,Math.floor((1280-8*(rest.length+1))/Math.max(1,rest.length))),sh=Math.round(sw*9/16);tile(main,8,8,1264,720-sh-24);rest.forEach((t,i)=>tile(t,8+i*(sw+8),720-sh-8,sw,sh))}
   else{const N=T.length;let bw=0,bh=0,bc=1;for(let cc=1;cc<=N;cc++){const rr=Math.ceil(N/cc);let w=(1264-8*(cc-1))/cc,h=w*9/16;if(h*rr+8*(rr-1)>704){h=(704-8*(rr-1))/rr;w=h*16/9}if(w>bw){bw=w;bh=h;bc=cc}}const rows=Math.ceil(N/bc);T.forEach((t,i)=>{const r=Math.floor(i/bc),inRow=Math.min(bc,N-r*bc),X0=(1280-(inRow*bw+8*(inRow-1)))/2,Y0=(720-(rows*bh+8*(rows-1)))/2;tile(t,X0+(i%bc)*(bw+8),Y0+r*(bh+8),bw,bh)})}};
  draw();R.dr=setInterval(draw,66);return c.captureStream(15)}
+/* ================= APP ANDROID (Capacitor) ================= */
+const CDMN={ok:()=>!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform()),P:n=>(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins[n])||null,busy:false};
+async function cdmnUrl(u){try{if(!u||String(u).indexOf('codicemesa://')!==0||!sb)return;try{const B=CDMN.P('Browser');if(B&&B.close)B.close()}catch(e){}
+ const qs=new URLSearchParams((String(u).split('?')[1]||'').split('#')[0]),hs=new URLSearchParams(String(u).split('#')[1]||''),code=qs.get('code');
+ if(code){const r=await sb.auth.exchangeCodeForSession(code);if(r&&r.error)note('Falha no login: '+r.error.message)}
+ else if(hs.get('access_token')){const r=await sb.auth.setSession({access_token:hs.get('access_token'),refresh_token:hs.get('refresh_token')||''});if(r&&r.error)note('Falha no login: '+r.error.message)}
+ else if(qs.get('error_description')||hs.get('error_description'))note('Login cancelado: '+(qs.get('error_description')||hs.get('error_description')))}catch(e){note('Falha no login.')}}
+(function(){let t=0;const iv=setInterval(()=>{if(!CDMN.ok()){if(++t>6)clearInterval(iv);return}const A=CDMN.P('App');if(!A||!A.addListener){if(++t>60)clearInterval(iv);return}clearInterval(iv);try{A.addListener('appUrlOpen',e=>cdmnUrl(e&&e.url))}catch(e){}},500)})();
+(function(){let t=0;const iv=setInterval(()=>{if(!CDMN.ok()){if(++t>6)clearInterval(iv);return}const SR=CDMN.P('ScreenRecorder');if(!SR||!SR.addListener){if(++t>60)clearInterval(iv);return}clearInterval(iv);
+ try{SR.addListener('recordingStopped',e=>{if(CL.rec&&CL.rec.native){CL.rec=null;try{clTrack();clRecBanner();clRender()}catch(x){}}if(!CDMN.busy&&e&&e.saved)note('Gravação salva em '+(e.path||'Filmes')+': '+(e.name||'')+'.')});SR.addListener('recordingError',e=>{note((e&&e.message)||'Erro na gravação.')})}catch(e){}},500)})();
+async function clNatStart(){const SR=CDMN.P('ScreenRecorder'),R={native:1,srcs:{},chunks:[],t0:Date.now()};CL.rec=R;try{clTrack();clRecBanner();clRender()}catch(e){}
+ try{const r=await SR.start({systemAudio:true,micAudio:true});note('Gravando a tela do celular em MP4'+(r&&r.systemAudio?' com o som do aparelho':' (sem o som do aparelho)')+'. Você pode sair do app; a gravação continua.')}
+ catch(e){if(CL.rec===R)CL.rec=null;try{clTrack();clRecBanner();clRender()}catch(x){}note((e&&e.message)||'Não consegui iniciar a gravação.')}}
+async function clNatStop(R){const SR=CDMN.P('ScreenRecorder');CDMN.busy=true;if(CL.rec===R)CL.rec=null;try{clTrack();clRecBanner();clRender()}catch(e){}
+ try{const r=await SR.stop();if(r&&r.saved)note('Gravação salva em '+(r.path||'Filmes')+': '+(r.name||'')+'.');else note('Gravação encerrada.')}catch(e){note((e&&e.message)||'Não consegui parar a gravação.')}CDMN.busy=false}
 async function clRecToggle(){
  if(CL.rec){clRecStop();return}
  if(!clIsGm()||!CL.on)return;
+ if(CDMN.ok()&&CDMN.P('ScreenRecorder')){clNatStart();return}
  if(typeof MediaRecorder==='undefined'){note('Este navegador não grava áudio. Use o Chrome, Edge ou Firefox.');return}
- let sysP=(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia)?clGetSys():null;
+ let sysP=(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia)?clGetSys():null;if(!sysP)setTimeout(()=>note('Este aparelho não deixa o navegador gravar a tela. Gravando só a chamada.'),3500);
  try{const A=window.AudioContext||window.webkitAudioContext;CL.ac=CL.ac||new A();try{await CL.ac.resume()}catch(e){}
   const dst=CL.ac.createMediaStreamDestination(),R={dst:dst,srcs:{},chunks:[],t0:Date.now()};CL.rec=R;clRecAttach();
   if(sysP){const r=await sysP;if(r&&r.stream)clRecSysAttach(R,r.stream);else if(r&&r.msg)note(r.msg)}
   const mt=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(x=>{try{return MediaRecorder.isTypeSupported(x)}catch(e){return false}})||'';
-  R.mime=mt;let vs=null;try{vs=clRecCanvas(R)}catch(e){vs=null}
+  R.mime=mt;let vs=null;if(R.scr&&R.sysS&&R.sysS.getVideoTracks().length)vs=R.sysS;else{try{vs=clRecCanvas(R)}catch(e){vs=null}}
   const vt=vs&&['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1,opus','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>{try{return MediaRecorder.isTypeSupported(x)}catch(e){return false}});
   let wantV=!!vt;
-  if(wantV){R.mime=vt;R.video=1;R.mr=new MediaRecorder(new MediaStream(vs.getVideoTracks().concat(dst.stream.getAudioTracks())),{mimeType:vt,videoBitsPerSecond:2200000,audioBitsPerSecond:96000})}
+  if(wantV){R.mime=vt;R.video=1;R.mr=new MediaRecorder(new MediaStream(vs.getVideoTracks().concat(dst.stream.getAudioTracks())),{mimeType:vt,videoBitsPerSecond:R.scr?5000000:2200000,audioBitsPerSecond:96000})}
   else{if(R.dr){clearInterval(R.dr);R.dr=0}R.video=0;let LM=null;try{LM=await Promise.race([clLoadLame(),new Promise((_,j)=>setTimeout(j,8000))])}catch(e){LM=null}
    if(LM&&CL.ac.createScriptProcessor&&CL.ac.createMediaStreamSource){clRecMp3(R,LM)}else{R.mr=new MediaRecorder(dst.stream,mt?{mimeType:mt,audioBitsPerSecond:96000}:undefined);note('Não consegui carregar o conversor de MP3. O áudio será salvo no formato original do navegador.')}}
   if(R.mr){R.mr.ondataavailable=e=>{if(e.data&&e.data.size)R.chunks.push(e.data)};R.mr.onstop=()=>clRecSave(R);R.mr.start(5000)}
-  R.iv=setInterval(clRecAttach,2500);clTrack();clRecBanner();clRender();note('Gravando '+(R.video?'vídeo e áudio ('+(/mp4/.test(R.mime||'')?'MP4':'WEBM')+')':R.enc?'só o áudio (MP3)':'só o áudio')+' da chamada. Todos veem o aviso de gravação. Deixe esta aba aberta.')
+  R.iv=setInterval(clRecAttach,2500);clTrack();clRecBanner();clRender();note('Gravando '+(R.video?(R.scr?'a tela e o áudio (':'vídeo e áudio (')+(/mp4/.test(R.mime||'')?'MP4':'WEBM')+')':R.enc?'só o áudio (MP3)':'só o áudio')+(R.scr?'. ':' da chamada. ')+'Todos veem o aviso de gravação. Deixe esta aba aberta.')
  }catch(e){const R=CL.rec;CL.rec=null;if(R&&R.iv)clearInterval(R.iv);note('Não consegui iniciar a gravação.');clTrack();clRecBanner();clRender()}}
-function clRecStop(){const R=CL.rec;if(!R)return;CL.rec=null;clearInterval(R.iv);if(R.dr)clearInterval(R.dr);try{if(R.mr&&R.mr.state!=='inactive')R.mr.stop()}catch(e){}if(R.enc){try{clRecSave(R)}catch(e){}}try{if(R.sysS)R.sysS.getTracks().forEach(t=>{t.onended=null;t.stop()})}catch(e){}Object.keys(R.srcs).forEach(k=>{try{R.srcs[k].n.disconnect()}catch(e){}});try{clTrack()}catch(e){}clRecBanner();try{clRender()}catch(e){}}
+function clRecStop(){const R=CL.rec;if(!R)return;if(R.native){clNatStop(R);return}CL.rec=null;clearInterval(R.iv);if(R.dr)clearInterval(R.dr);try{if(R.mr&&R.mr.state!=='inactive')R.mr.stop()}catch(e){}if(R.enc){try{clRecSave(R)}catch(e){}}try{if(R.sysS)R.sysS.getTracks().forEach(t=>{t.onended=null;t.stop()})}catch(e){}Object.keys(R.srcs).forEach(k=>{try{R.srcs[k].n.disconnect()}catch(e){}});try{clTrack()}catch(e){}clRecBanner();try{clRender()}catch(e){}}
 /* ---- gravação: som do computador (outros apps, músicas, abas) ---- */
-async function clGetSys(){try{const st=await navigator.mediaDevices.getDisplayMedia({video:true,audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:2},systemAudio:'include'});
- if(!st.getAudioTracks().length){st.getTracks().forEach(t=>t.stop());return{msg:'O navegador não compartilhou o áudio. Escolha "Tela inteira" e marque "Compartilhar áudio do sistema". Isso só funciona no Windows e no ChromeOS; no Mac e no Linux só dá para compartilhar o áudio de uma aba.'}}
- return{stream:st}}catch(e){return{msg:(e&&e.name==='NotAllowedError')?'Compartilhamento cancelado. A gravação segue só com o som da chamada. Use o botão 🔊 no aviso de gravação para tentar de novo.':'Não consegui capturar o som do computador neste navegador. A gravação segue só com o som da chamada.'}}}
-function clRecSysAttach(R,st){try{const surf=(st.getVideoTracks()[0]&&st.getVideoTracks()[0].getSettings&&st.getVideoTracks()[0].getSettings().displaySurface)||'';
- const n=CL.ac.createMediaStreamSource(new MediaStream(st.getAudioTracks())),g=CL.ac.createGain();g.gain.value=1;n.connect(g);g.connect(R.dst);R.sysS=st;R.sys=1;R.sysN=n;
- if(surf==='monitor'){R.skipRemote=1;Object.keys(R.srcs).forEach(k=>{if(k!=='me'){try{R.srcs[k].n.disconnect()}catch(e){}delete R.srcs[k]}})}
- st.getTracks().forEach(t=>{t.onended=()=>{if(CL.rec===R){R.sys=0;R.skipRemote=0;try{n.disconnect()}catch(e){}note('O compartilhamento do som do computador terminou. A gravação segue só com a chamada.');clRecBanner()}}});
- note('Som do computador ligado na gravação.');clRecBanner()}catch(e){note('Não consegui ligar o som do computador.')}}
-async function clRecSysBtn(){const R=CL.rec;if(!R||R.sys)return;const r=await clGetSys();if(r.stream&&CL.rec===R)clRecSysAttach(R,r.stream);else if(r.msg)note(r.msg)}
+async function clGetSys(){try{const st=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'monitor',frameRate:{ideal:30,max:30},cursor:'always'},audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:2},systemAudio:'include',surfaceSwitching:'include',monitorTypeSurfaces:'include'});return{stream:st}}catch(e){return{msg:(e&&e.name==='NotAllowedError')?'Compartilhamento da tela cancelado. A gravação segue só com a chamada. Use o botão 🔊 no aviso de gravação para tentar de novo.':'Não consegui capturar a tela neste navegador. A gravação segue só com a chamada.'}}}
+function clRecSysAttach(R,st,late){try{const vt0=st.getVideoTracks()[0],surf=(vt0&&vt0.getSettings&&vt0.getSettings().displaySurface)||'',au=st.getAudioTracks();R.sysS=st;R.scr=!late&&!!vt0;
+ if(late)st.getVideoTracks().forEach(t=>{t.onended=null;try{t.stop()}catch(e){}});
+ if(au.length){const n=CL.ac.createMediaStreamSource(new MediaStream(au)),g=CL.ac.createGain();g.gain.value=1;n.connect(g);g.connect(R.dst);R.sys=1;R.sysN=n;
+  if(surf==='monitor'){R.skipRemote=1;Object.keys(R.srcs).forEach(k=>{if(k!=='me'){try{R.srcs[k].n.disconnect()}catch(e){}delete R.srcs[k]}})}}
+ st.getTracks().forEach(t=>{t.onended=()=>{if(CL.rec!==R)return;if(R.scr&&t.kind==='video'){note('O compartilhamento da tela terminou. Gravação encerrada e salva.');clRecStop();return}if(t.kind==='audio'){R.sys=0;R.skipRemote=0;try{R.sysN&&R.sysN.disconnect()}catch(e){}note('O som do computador parou de ser compartilhado.');clRecBanner()}}});
+ note(au.length?(R.scr?'Tela e som do computador ligados na gravação.':'Som do computador ligado na gravação.'):'Sem o som do computador. Para gravar o som, compartilhe a tela inteira e marque "Compartilhar áudio do sistema" (Windows e ChromeOS).');clRecBanner()}catch(e){note('Não consegui ligar a captura da tela.')}}
+async function clRecSysBtn(){const R=CL.rec;if(!R||R.sys)return;const r=await clGetSys();if(r.stream&&CL.rec===R)clRecSysAttach(R,r.stream,1);else if(r.msg)note(r.msg)}
 let CLMP3=null;
 function clLoadLame(){if(window.lamejs)return Promise.resolve(window.lamejs);return CLMP3||(CLMP3=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';s.onload=()=>window.lamejs?res(window.lamejs):rej(new Error('lame'));s.onerror=()=>{CLMP3=null;rej(new Error('lame'))};document.head.appendChild(s)}))}
 /* áudio da chamada codificado em MP3 durante a gravação (não pesa na memória em chamadas longas) */
