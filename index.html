@@ -91170,4 +91170,69 @@ export { GLTFLoader };
  setInterval(()=>{if(document.body&&!$('cdmChatFab'))ensureUI()},1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureUI);else ensureUI();
 })();
 </script>
+<script>
+/* Códice v60 — catálogo de especializações do Livro do Jogador D&D 5e (2014).
+   Resumos autorais para referência; a escolha e os recursos continuam editáveis na ficha. */
+(function(){
+ if(typeof LIB==='undefined'||!LIB.dnd)return;
+ const blocks=[
+ ['Bárbaro › Caminhos Primitivos',[
+ ['Caminho do Berserker','Especializa-se em fúria agressiva. Frenesi permite um ataque corpo a corpo adicional como ação bônus durante a fúria, com custo de exaustão ao terminar.'],
+ ['Caminho do Guerreiro Totêmico','Recebe um espírito totêmico animal que concede benefícios. O urso favorece resistência, a águia mobilidade e o lobo apoio aos aliados.']]],
+ ['Bardo › Colégios',[
+ ['Colégio do Conhecimento','Amplia perícias e conhecimentos; recebe Segredos Mágicos Adicionais e pode usar Palavras de Interrupção para reduzir resultados de inimigos.'],
+ ['Colégio da Bravura','Aprimora a atuação em combate: proficiência marcial, Inspiração de Combate, Ataque Extra e maior capacidade defensiva.']]],
+ ['Clérigo › Domínios Divinos',[
+ ['Conhecimento','Concede perícias e idiomas; Canalizar Divindade pode acessar temporariamente conhecimentos ou proficiências.'],
+ ['Guerra','Favorece ataques e combate armado, com ataques adicionais e auxílio divino em acertos.'],
+ ['Luz','Usa luz divina para proteger aliados e ferir inimigos; inclui proteção contra ataques e magias radiantes.'],
+ ['Natureza','Conecta o clérigo à natureza, com perícia ou truque druídico e recursos de encantar animais e plantas.'],
+ ['Tempestade','Manipula trovões e relâmpagos, podendo retaliar contra atacantes e maximizar certos danos elétricos ou trovejantes.'],
+ ['Trapaça','Especializa-se em disfarce, furtividade e duplicatas ilusórias para confundir inimigos.'],
+ ['Vida','Foca em cura e preservação; suas magias de cura restauram pontos de vida adicionais.']]],
+ ['Druida › Círculos Druídicos',[
+ ['Círculo da Terra','Aprofunda a conjuração e a ligação com um ambiente natural; recebe magias adicionais e recuperação de energia mágica.'],
+ ['Círculo da Lua','Aprimora a Forma Selvagem, permitindo assumir formas mais poderosas e lutar melhor enquanto transformado.']]],
+ ['Guerreiro › Arquétipos Marciais',[
+ ['Campeão','Busca excelência física: melhora acertos críticos, iniciativa, atletismo e capacidade de esforço.'],
+ ['Mestre de Batalha','Aprende manobras táticas alimentadas por dados de superioridade, como desarmar, derrubar, fintar e aparar.'],
+ ['Cavaleiro Arcano','Combina combate com magia de abjuração e evocação; vincula-se a armas e pode conjurar mantendo equipamento nas mãos.']]],
+ ['Monge › Tradições Monásticas',[
+ ['Caminho da Mão Aberta','Aprimora técnicas desarmadas e pode impor efeitos como derrubar, empurrar ou impedir reações.'],
+ ['Caminho das Sombras','Usa ki para furtividade e deslocamento entre sombras, além de conjurar magias ligadas à escuridão.'],
+ ['Caminho dos Quatro Elementos','Canaliza disciplinas elementais por meio de ki, reproduzindo efeitos de fogo, água, ar e terra.']]],
+ ['Paladino › Juramentos Sagrados',[
+ ['Juramento de Devoção','Compromisso de honestidade, coragem e compaixão; fortalece arma com energia sagrada e protege contra efeitos malignos.'],
+ ['Juramento dos Anciões','Defende a luz e a vida; canaliza poder natural, resiste a magias e protege aliados contra criaturas sobrenaturais.'],
+ ['Juramento de Vingança','Persegue inimigos jurados; marca alvos, aumenta a capacidade de perseguição e combate adversários prioritários.']]],
+ ['Guardião › Arquétipos',[
+ ['Caçador','Escolhe técnicas para enfrentar ameaças: atacar grupos, defender-se de inimigos próximos ou superar criaturas resistentes.'],
+ ['Mestre das Bestas','Forma vínculo com uma besta companheira que age em conjunto com o guardião e evolui com sua experiência.']]],
+ ['Ladino › Arquétipos Ladinos',[
+ ['Ladrão','Especialista em infiltração e saque; escala melhor, usa itens rapidamente e aproveita oportunidades em combate.'],
+ ['Assassino','Especializa-se em disfarce, infiltração e ataques surpresa devastadores contra inimigos desprevenidos.'],
+ ['Trapaceiro Arcano','Combina Ataque Furtivo com magia de ilusão e encantamento, usando prestidigitação à distância.']]],
+ ['Feiticeiro › Origens Mágicas',[
+ ['Linhagem Dracônica','A magia vem de ancestralidade dracônica; concede resistência, maior vigor e afinidade com um tipo de dano.'],
+ ['Magia Selvagem','A magia é instável; conjurações podem provocar surtos aleatórios e a sorte pode ser alterada por marés de caos.']]],
+ ['Bruxo › Patronos Sobrenaturais',[
+ ['Arquifeérico','Pacto com uma entidade feérica poderosa; oferece presença encantadora, fuga sobrenatural e efeitos de medo ou fascínio.'],
+ ['Infernal','Pacto com uma entidade dos planos inferiores; recompensa derrotar inimigos com vigor temporário e poderes infernais.'],
+ ['Grande Ancião','Pacto com uma entidade alienígena; concede comunicação telepática e poderes que afetam a mente.']]],
+ ['Mago › Tradições Arcanas',[
+ ['Abjuração','Especializa-se em magia protetora, criando uma proteção arcana que absorve dano.'],
+ ['Conjuração','Especializa-se em transportar criaturas e objetos, criar matéria e deslocar-se por teleporte.'],
+ ['Adivinhação','Obtém presságios sobre o futuro e pode substituir algumas jogadas por resultados previamente previstos.'],
+ ['Encantamento','Manipula emoções e vontades, influenciando ou incapacitando criaturas.'],
+ ['Evocação','Domina magias de energia; molda áreas de efeito para proteger aliados e potencializa certos danos.'],
+ ['Ilusão','Cria ilusões mais convincentes e aprende a torná-las parcialmente reais.'],
+ ['Necromancia','Manipula energia vital e morte, recuperando vigor e fortalecendo criaturas mortas-vivas sob seu controle.'],
+ ['Transmutação','Altera matéria e propriedades físicas; mantém uma pedra transmutadora com benefícios escolhidos.']]]
+ ];
+ for(const [name,opts] of blocks){
+   if(LIB.dnd.some(x=>x[0]===name))continue;
+   LIB.dnd.push([name,[['Opções',opts.map(([n,desc])=>[n,'Resumo de referência — '+desc,'','Passiva','',''])]]]);
+ }
+})();
+</script>
 </body></html>
